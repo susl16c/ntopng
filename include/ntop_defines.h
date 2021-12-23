@@ -928,23 +928,28 @@
 #define NTOPNG_WIDGET_URL                    "/widgets/"
 
 #define CONST_MAX_NUM_THREADED_ACTIVITIES 64
+
+#define UPGRADE_SCRIPT_PATH                  "upgrade.lua"
+#define PINGER_SCRIPT_PATH                   "pinger.lua"
+#define STATS_UPDATE_SCRIPT_PATH             "stats_update.lua"
+
 #define STARTUP_SCRIPT_PATH                  "startup.lua"
 #define BOOT_SCRIPT_PATH                     "boot.lua" /* Executed as root before networking is setup */
 #define SHUTDOWN_SCRIPT_PATH                 "shutdown.lua"
+
+
 #define HOUSEKEEPING_SCRIPT_PATH             "housekeeping.lua"
 #define DISCOVER_SCRIPT_PATH                 "discover.lua"
 #define TIMESERIES_SCRIPT_PATH               "timeseries.lua"
 #define NOTIFICATIONS_SCRIPT_PATH            "notifications.lua"
-#define UPGRADE_SCRIPT_PATH                  "upgrade.lua"
-#define PINGER_SCRIPT_PATH                   "pinger.lua"
-#define SECOND_SCRIPT_PATH                   "second.lua"
-#define MINUTE_SCRIPT_PATH                   "minute.lua"
-#define STATS_UPDATE_SCRIPT_PATH             "stats_update.lua"
-#define THIRTY_SECONDS_SCRIPT_PATH           "30sec.lua"
-#define FIVE_MINUTES_SCRIPT_PATH             "5min.lua"
-#define HOURLY_SCRIPT_PATH                   "hourly.lua"
-#define DAILY_SCRIPT_PATH                    "daily.lua"
 #define SNMP_SCRIPT_PATH                     "snmp.lua"
+
+
+#define SECOND_SCRIPT_DIR                   "second"
+#define MINUTE_SCRIPT_DIR                   "minute"
+#define FIVE_MINUTES_SCRIPT_DIR             "5min"
+#define HOURLY_SCRIPT_DIR                   "hourly"
+#define DAILY_SCRIPT_DIR                    "daily"
 
 
 #define CHECKS_CONFIG                        "ntopng.prefs.checks.configset_v1"  /* Sync with checks.lua CONFIGSET_KEY  */

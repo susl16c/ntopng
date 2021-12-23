@@ -25,23 +25,18 @@
 #include "ntop_includes.h"
 
 class ThreadPool;
+class PeriodicScript;
 
 class ThreadedActivity {
  private:
   bool terminating;
   pthread_t pthreadLoop;
-  char *path;
-  u_int32_t periodicity;
-  u_int32_t max_duration_secs;
   u_int32_t deadline_approaching_secs;
-  bool align_to_localtime;
-  bool exclude_viewed_interfaces;
-  bool exclude_pcap_dump_interfaces;
   bool thread_started;
   bool systemTaskRunning;
   ThreadedActivityState *interfaceTasksRunning;
   Mutex m;
-  ThreadPool *pool;
+  PeriodicScript *periodic_script;
   ThreadedActivityStats **threaded_activity_stats;
 
   void setDeadlineApproachingSecs();
@@ -66,7 +61,7 @@ class ThreadedActivity {
 		   ThreadPool* _pool = NULL);
   ~ThreadedActivity();
 
-  inline const char *activityPath() const { return path; };
+  const char *activityPath();
   void activityBody();
   void runSystemScript(time_t now);
   void runScript(time_t now, char *script_path, NetworkInterface *iface, time_t deadline);
@@ -81,7 +76,12 @@ class ThreadedActivity {
   void set_state_running(NetworkInterface *iface);
   bool isQueueable(NetworkInterface *iface) const;
   bool isDeadlineApproaching(time_t deadline) const;
-  inline u_int32_t getPeriodicity() { return(periodicity); };
+  u_int32_t getPeriodicity();
+  u_int32_t getMaxDuration();
+  bool excludePcap();
+  bool excludeViewedIfaces();
+  ThreadPool *getPool();
+  bool alignToLocalTime();
   ThreadedActivityState get_state(NetworkInterface *iface) const;
   ThreadedActivityStats *getThreadedActivityStats(NetworkInterface *iface, bool allocate_if_missing);
 

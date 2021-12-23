@@ -430,6 +430,7 @@ using namespace std;
 #include "ThreadedActivityStats.h"
 #include "ThreadedActivity.h"
 #include "ThreadPool.h"
+#include "PeriodicScript.h"
 #include "PeriodicActivities.h"
 #include "MacManufacturers.h"
 #include "AddressResolution.h"

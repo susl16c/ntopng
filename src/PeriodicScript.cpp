@@ -19,27 +19,29 @@
  *
  */
 
-#ifndef _PERIODIC_ACTIVITIES_H_
-#define _PERIODIC_ACTIVITIES_H_
-
 #include "ntop_includes.h"
 
-class PeriodicActivities {
- private:
-  ThreadedActivity *activities[CONST_MAX_NUM_THREADED_ACTIVITIES];
-  u_int16_t num_activities;
-  ThreadPool *second_thread_pool, *minute_thread_pool, *five_minute_thread_pool, 
-    *hourly_thread_pool, *daily_thread_pool, *housekeeping_pool /* TODO: remove the housekeeping pool*/;
-  
-  u_int8_t getNumThreadsPerPool(const char* path, std::vector<char*> *iface_scripts_list, std::vector<char*> *system_scripts_list);
-  
- public:
-  PeriodicActivities();
-  ~PeriodicActivities();
+/* ******************************************* */
 
-  void startPeriodicActivitiesLoop();
-  void sendShutdownSignal();
-  void lua(NetworkInterface *iface, lua_State *vm);
-};
+PeriodicScript::PeriodicScript(const char* _path,		   
+		   u_int32_t _periodicity_seconds,
+		   u_int32_t _max_duration_seconds,
+		   bool _align_to_localtime,
+		   bool _exclude_viewed_interfaces,
+		   bool _exclude_pcap_dump_interfaces,
+		   ThreadPool* _pool) {
+    
+    path = strdup(_path);
+    periodicity = _periodicity_seconds;
+    max_duration_secs = _max_duration_seconds;
+    pool = _pool;
+    align_to_localtime = _align_to_localtime;  
+    exclude_viewed_interfaces = _exclude_viewed_interfaces;
+    exclude_pcap_dump_interfaces = _exclude_pcap_dump_interfaces;
+}
 
-#endif /* _PERIODIC_ACTIVITIES_H_ */
+/* ******************************************* */
+
+PeriodicScript::~PeriodicScript() {
+    //if(path) free(path);
+}

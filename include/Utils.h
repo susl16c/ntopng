@@ -72,6 +72,7 @@ public:
   static size_t file_read(const char *path, char **content);
   static bool file_exists(const char * const path);
   static bool dir_exists(const char * const path);
+  static int8_t num_files_in_dir(const char * const dir);
   static bool mkdir_tree(char * const path);
   static int mkdir(const char *pathname, mode_t mode);
   static int remove_recursively(const char * const path);

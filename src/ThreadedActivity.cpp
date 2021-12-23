@@ -40,21 +40,22 @@ ThreadedActivity::ThreadedActivity(const char* _path,
 				   bool _exclude_pcap_dump_interfaces,
 				   ThreadPool *_pool) {
   terminating = false;
-  periodicity = _periodicity_seconds;
-  max_duration_secs = _max_duration_seconds;
-  align_to_localtime = _align_to_localtime;
-  exclude_viewed_interfaces = _exclude_viewed_interfaces;
-  exclude_pcap_dump_interfaces = _exclude_pcap_dump_interfaces;
   thread_started = false;
-  path = strdup(_path); /* ntop->get_callbacks_dir() */;
   interfaceTasksRunning = (ThreadedActivityState*) calloc(MAX_NUM_INTERFACE_IDS + 1 /* For the system interface */, sizeof(ThreadedActivityState));
   for(int i = 0; i < MAX_NUM_INTERFACE_IDS + 1; i++) {
     interfaceTasksRunning[i] = threaded_activity_state_sleeping;
   }
   threaded_activity_stats = new (std::nothrow) ThreadedActivityStats*[MAX_NUM_INTERFACE_IDS + 1 /* For the system interface */]();
-  pool = _pool;
+  periodic_script = new (std::nothrow) PeriodicScript(_path,
+                                                      _periodicity_seconds,
+                                                      _max_duration_seconds,
+                                                      _align_to_localtime,
+                                                      _exclude_viewed_interfaces,
+                                                      _exclude_pcap_dump_interfaces,
+                                                      _pool);
+  
   setDeadlineApproachingSecs();
-
+  
 #ifdef THREADED_DEBUG
   ntop->getTrace()->traceEvent(TRACE_WARNING, "[%p] Creating ThreadedActivity '%s'", this, path);
 #endif
@@ -79,17 +80,17 @@ ThreadedActivity::~ThreadedActivity() {
   if(interfaceTasksRunning)
     free(interfaceTasksRunning);
 
-  if(path) free(path);
+  if(periodic_script) delete periodic_script;
 }
 
 /* ******************************************* */
 
 void ThreadedActivity::setDeadlineApproachingSecs() {
-  if(periodicity <= 1)
+  if(getPeriodicity() <= 1)
     deadline_approaching_secs =  0;
-  else if(periodicity <= 5)
+  else if(getPeriodicity() <= 5)
     deadline_approaching_secs =  1;
-  else if(periodicity <= 60)
+  else if(getPeriodicity() <= 60)
     deadline_approaching_secs =  5;
   else /* > 60 secs */
     deadline_approaching_secs = 10;
@@ -108,7 +109,7 @@ void ThreadedActivity::terminateEnqueueLoop() {
     pthread_join(pthreadLoop, &res);
 
 #ifdef THREAD_DEBUG
-    ntop->getTrace()->traceEvent(TRACE_NORMAL, "Joined thread %s", path);
+    ntop->getTrace()->traceEvent(TRACE_NORMAL, "Joined thread %s", activityPath());
 #endif
 
     thread_started = false;
@@ -135,8 +136,6 @@ ThreadedActivityState *ThreadedActivity::getThreadedActivityState(NetworkInterfa
     if(stats_idx >= 0 && stats_idx < MAX_NUM_INTERFACE_IDS + 1)
       return &interfaceTasksRunning[stats_idx];
     else {
-      ntop->getTrace()->traceEvent(TRACE_ERROR, "Internal error. Interface id too large. [path: %s][iface: %s]",
-				   path, iface->get_name());
       return NULL;
     }
   } else
@@ -190,7 +189,7 @@ void ThreadedActivity::set_state(NetworkInterface *iface, ThreadedActivityState 
 	 || (*cur_state == threaded_activity_state_running
 	     && ta_state != threaded_activity_state_sleeping))
 	ntop->getTrace()->traceEvent(TRACE_ERROR, "Internal error. Invalid state transition. [path: %s][iface: %s]",
-				     path, iface->get_name());
+				     activityPath(), iface->get_name());
       /* Everything is OK, let's set the state. */
       *cur_state = ta_state;
   }
@@ -262,7 +261,7 @@ bool ThreadedActivity::isDeadlineApproaching(time_t deadline) const {
 /* NOTE: this runs into a separate thread, launched by PeriodicActivities
  * after creation. */
 void ThreadedActivity::activityBody() {
-  if(periodicity == 0)       /* The script is not periodic */
+  if(getPeriodicity() == 0)       /* The script is not periodic */
     aperiodicActivityBody();
   else
     periodicActivityBody();
@@ -279,7 +278,7 @@ void ThreadedActivity::run() {
       pcap_dump_only = false;
   }
   /* Don't schedule periodic activities it we are processing pcap files only. */
-  if (exclude_pcap_dump_interfaces && pcap_dump_only)
+  if (excludePcap() && pcap_dump_only)
     return;
 
   if(pthread_create(&pthreadLoop, NULL, startActivity, (void*)this) == 0) {
@@ -345,14 +344,14 @@ void ThreadedActivity::runSystemScript(time_t now) {
   char script_path[MAX_PATH];
   
   snprintf(script_path, sizeof(script_path), "%s/system/%s",
-	   ntop->get_callbacks_dir(), path);
+	   ntop->get_callbacks_dir(), activityPath());
 
   if(stat(script_path, &buf) == 0) {
     set_state_running(ntop->getSystemInterface());
-    runScript(now, script_path, ntop->getSystemInterface(), now + max_duration_secs /* this is the deadline */);
+    runScript(now, script_path, ntop->getSystemInterface(), now + getMaxDuration() /* this is the deadline */);
     set_state_sleeping(ntop->getSystemInterface());
   } else
-    ntop->getTrace()->traceEvent(TRACE_WARNING, "Unable to find script %s", path);
+    ntop->getTrace()->traceEvent(TRACE_WARNING, "Unable to find script %s", activityPath());
 }
 
 /* ******************************************* */
@@ -367,21 +366,21 @@ void ThreadedActivity::runScript(time_t now, char *script_path, NetworkInterface
   if(!iface)
     return;
 
-  if(strcmp(path, SHUTDOWN_SCRIPT_PATH) && isTerminating())
+  if(strcmp((activityPath()), SHUTDOWN_SCRIPT_PATH) && isTerminating())
     return;
 
-  if(iface->isViewed() && exclude_viewed_interfaces)
+  if(iface->isViewed() && excludeViewedIfaces())
     return;
 
 #ifdef THREADED_DEBUG
-  ntop->getTrace()->traceEvent(TRACE_WARNING, "[%p] Running %s", this, path);
+  ntop->getTrace()->traceEvent(TRACE_WARNING, "[%p] Running %s", this, activityPath());
 #endif
 
   ntop->getTrace()->traceEvent(TRACE_INFO, "Running %s (iface=%p)", script_path, iface);
 
   l = loadVm(script_path, iface, now);
   if(!l) {
-    ntop->getTrace()->traceEvent(TRACE_ERROR, "Unable to load the Lua vm [%s][vm: %s]", iface->get_name(), path);
+    ntop->getTrace()->traceEvent(TRACE_ERROR, "Unable to load the Lua vm [%s][vm: %s]", iface->get_name(), activityPath());
     return;
   }
 
@@ -449,17 +448,19 @@ void ThreadedActivity::periodicActivityBody() {
   u_int now;
   u_int32_t next_deadline, next_schedule = (u_int32_t)time(NULL);
 
-  next_schedule = Utils::roundTime(next_schedule, periodicity, align_to_localtime ? ntop->get_time_offset() : 0);
+  next_schedule = Utils::roundTime(next_schedule, getPeriodicity(), 
+                                  alignToLocalTime() ? ntop->get_time_offset() : 0);
 
   while(!isTerminating()) {
     now = (u_int)time(NULL);
 
     if(now >= next_schedule) {
-      next_deadline = now + max_duration_secs; /* deadline is max_duration_secs from now */
-      next_schedule = Utils::roundTime(now, periodicity, align_to_localtime ? ntop->get_time_offset() : 0);
+      next_deadline = now + getMaxDuration(); /* deadline is max_duration_secs from now */
+      next_schedule = Utils::roundTime(now, getPeriodicity(), 
+                                      alignToLocalTime() ? ntop->get_time_offset() : 0);
 
-      if(!skipExecution(path))
-	schedulePeriodicActivity(pool, now, next_deadline);
+      if(!skipExecution(activityPath()))
+	schedulePeriodicActivity(getPool(), now, next_deadline);
     }
 
     sleep(1);
@@ -477,55 +478,81 @@ void ThreadedActivity::periodicActivityBody() {
  * NetworkInterface. */
 void ThreadedActivity::schedulePeriodicActivity(ThreadPool *pool, time_t scheduled_time, time_t deadline) {
   /* Schedule per system / interface */
-  char script_path[MAX_PATH];
+  char dir_path[MAX_PATH];
   struct stat buf;
-
-#ifdef THREAD_DEBUG
-  char deadline_buf[32], scheduled_time_buf[32];
-  struct tm deadline_tm, scheduled_time_tm;
-
-  strftime(deadline_buf, sizeof(deadline_buf), "%H:%M:%S", localtime_r(&deadline, &deadline_tm));
-  strftime(scheduled_time_buf, sizeof(scheduled_time_buf), "%H:%M:%S", localtime_r(&scheduled_time, &scheduled_time_tm));
-  ntop->getTrace()->traceEvent(TRACE_NORMAL, "Scheduling [%s][schedule: %s][deadline: %s]",
-			       path, scheduled_time_buf, deadline_buf);
-#endif
+  DIR *dir_struct;
+  struct dirent *ent;
 
   /* Schedule system script */
-  snprintf(script_path, sizeof(script_path), "%s/system/%s",
-	   ntop->get_callbacks_dir(), path);
+  snprintf(dir_path, sizeof(dir_path), "%s/%s/system/",
+	   ntop->get_callbacks_dir(), activityPath());
 
 #ifdef NTOPNG_PRO
-  if(stat(script_path, &buf)) {
+  if(stat(dir_path, &buf)) {
     /* Attempt at locating and executing the callback under the pro callbacks */
-    snprintf(script_path, sizeof(script_path), "%s/system/%s",
-	     ntop->get_pro_callbacks_dir(), path);
+    snprintf(dir_path, sizeof(dir_path), "%s/%s/system/",
+	     ntop->get_pro_callbacks_dir(), activityPath());
   }
 #endif
 
-  if(stat(script_path, &buf) == 0) {
-    if(pool->queueJob(this, script_path, ntop->getSystemInterface(), scheduled_time, deadline)) {
-#ifdef THREAD_DEBUG
-      ntop->getTrace()->traceEvent(TRACE_NORMAL, "Queued system job %s", script_path);
-#endif
+  if(stat(dir_path, &buf) == 0) {
+    /* Open the directory e run all the scripts inside it */
+    if ((dir_struct = opendir (dir_path)) != NULL) {
+      while ((ent = readdir (dir_struct)) != NULL) {
+        if (ent->d_name[0] != '.') { 
+          char script_path[MAX_PATH];
+            /* Schedule interface script, one for each interface */
+          snprintf(script_path, sizeof(script_path), "%s%s", dir_path, ent->d_name);
+
+          if(pool->queueJob(this, script_path, ntop->getSystemInterface(), scheduled_time, deadline)) {
+  #ifdef THREAD_DEBUG
+        ntop->getTrace()->traceEvent(TRACE_NORMAL, "Queued system job %s", script_path);
+  #endif
+          }
+        }
+      }
+
+      closedir (dir_struct);
     }
   }
 
   /* Schedule interface script, one for each interface */
-  snprintf(script_path, sizeof(script_path), "%s/interface/%s",
-	   ntop->get_callbacks_dir(), path);
+  snprintf(dir_path, sizeof(dir_path), "%s/%s/interface/",
+	   ntop->get_callbacks_dir(), activityPath());
 
-  if(stat(script_path, &buf) == 0) {
-    for(int i = 0; i < ntop->get_num_interfaces(); i++) {
-      NetworkInterface *iface = ntop->getInterface(i);
-
-      if(iface
-	 && (iface->getIfType() != interface_type_PCAP_DUMP || !exclude_pcap_dump_interfaces)) {
-	if(pool->queueJob(this, script_path, iface, scheduled_time, deadline)) {
-#ifdef THREAD_DEBUG
-	  ntop->getTrace()->traceEvent(TRACE_NORMAL, "Queued interface job %s [%s]", script_path, iface->get_name());
+#ifdef NTOPNG_PRO
+  if(stat(dir_path, &buf)) {
+    /* Attempt at locating and executing the callback under the pro callbacks */
+    snprintf(dir_path, sizeof(dir_path), "%s/%s/interface/",
+	     ntop->get_pro_callbacks_dir(), activityPath());
+  }
 #endif
-	}	
+
+  if (stat(dir_path, &buf) == 0) {
+    /* Open the directory e run all the scripts inside it */
+    if ((dir_struct = opendir (dir_path)) != NULL) {
+      while ((ent = readdir (dir_struct)) != NULL) {
+        if (ent->d_name[0] != '.') { /* Excluding . and .. directories */
+          for(int i = 0; i < ntop->get_num_interfaces(); i++) {
+            NetworkInterface *iface = ntop->getInterface(i);
+            
+            /* Running the script for each interface if it's not a PCAP */
+            if (iface &&
+               (iface->getIfType() != interface_type_PCAP_DUMP || !excludePcap())) {      
+              char script_path[MAX_PATH];
+                /* Schedule interface script, one for each interface */
+              snprintf(script_path, sizeof(script_path), "%s%s", dir_path, ent->d_name);       
+         
+              if(pool->queueJob(this, script_path, iface, scheduled_time, deadline)) {
+            #ifdef THREAD_DEBUG
+                ntop->getTrace()->traceEvent(TRACE_NORMAL, "Queued interface job %s [%s]", script_path, iface->get_name());
+            #endif
+              }
+            }
+          }
+        }
       }
+      closedir (dir_struct);
     }
   }
 }
@@ -542,11 +569,55 @@ void ThreadedActivity::lua(NetworkInterface *iface, lua_State *vm) {
 
     lua_push_str_table_entry(vm, "state", get_state_label(get_state(iface)));
     lua_push_uint64_table_entry(vm, "periodicity", getPeriodicity());
-    lua_push_uint64_table_entry(vm, "max_duration_secs", max_duration_secs);
+    lua_push_uint64_table_entry(vm, "max_duration_secs", getMaxDuration());
     lua_push_uint64_table_entry(vm, "deadline_secs", deadline_approaching_secs);
 
-    lua_pushstring(vm, path ? path : "");
+    lua_pushstring(vm, activityPath() ? activityPath() : "");
     lua_insert(vm, -2);
     lua_settable(vm, -3);
   }
 }
+
+/* ******************************************* */
+
+const char *ThreadedActivity::activityPath() {
+  return (periodic_script ? periodic_script->getPath() : "");
+}
+
+/* ******************************************* */
+
+u_int32_t ThreadedActivity::getPeriodicity() { 
+  return (periodic_script ? periodic_script->getPeriodicity() : 0); 
+}
+
+/* ******************************************* */
+
+u_int32_t ThreadedActivity::getMaxDuration() { 
+  return (periodic_script ? periodic_script->getMaxDuration() : 0); 
+}
+
+/* ******************************************* */
+
+bool ThreadedActivity::excludePcap() { 
+  return (periodic_script ? periodic_script->excludePcap() : false);
+}
+
+/* ******************************************* */
+
+bool ThreadedActivity::excludeViewedIfaces() { 
+  return (periodic_script ? periodic_script->excludeViewedIfaces() : false);
+}
+
+/* ******************************************* */
+
+bool ThreadedActivity::alignToLocalTime() { 
+  return (periodic_script ? periodic_script->alignToLocalTime() : false);
+}
+
+/* ******************************************* */
+
+ThreadPool *ThreadedActivity::getPool() { 
+  return (periodic_script ? periodic_script->getPool() : NULL);
+}
+
+
