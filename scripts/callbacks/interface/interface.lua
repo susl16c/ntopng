@@ -6,8 +6,6 @@ local dirs = ntop.getDirs()
 package.path = dirs.installdir .. "/scripts/lua/modules/?.lua;" .. package.path
 package.path = dirs.installdir .. "/scripts/lua/modules/pools/?.lua;" .. package.path
 require "lua_utils"
-local alert_utils = require "alert_utils"
-local interface_pools = require "interface_pools"
 
 local alerts_api = require("alerts_api")
 local checks = require("checks")
@@ -19,16 +17,13 @@ local do_trace = false             -- Trace lua calls
 
 local ifid = nil
 local available_modules = nil
-local interface_entity = alert_consts.alert_entities.interface.entity_id
 local iface_config = nil
 local configset = nil
-local pools_instance = nil
 
 -- The function below ia called once (#pragma once)
 function setup(str_granularity)
    if(do_trace) then print("alert.lua:setup("..str_granularity..") called\n") end
    ifid = interface.getId()
-   local ifname = interface.setActiveInterfaceId(ifid)
 
    -- Load the check modules
    available_modules = checks.load(ifid, checks.script_types.traffic_element, "interface", {
@@ -37,14 +32,13 @@ function setup(str_granularity)
    })
 
    configset = checks.getConfigset()
-   -- Instance of local network pools to get assigned members
-   pools_instance = interface_pools:create()
    -- Retrieve the configuration associated to the confset
    iface_config = checks.getConfig(configset, "interface")
 end
 
 -- #################################################################
 
+-- This function is called by Syslog
 -- The function below ia called once (#pragma once)
 function teardown(str_granularity)
    if(do_trace) then print("alert.lua:teardown("..str_granularity..") called\n") end
@@ -54,7 +48,9 @@ end
 
 -- #################################################################
 
--- The function below is called once
+-- This function is called by NetworkInterface.cpp:8978
+-- and it is called when clicking the release button
+-- This function runs periodic local network scripts
 function runScripts(granularity)
    if table.empty(available_modules.hooks[granularity]) then
       if(do_trace) then print("interface:runScripts("..granularity.."): no modules, skipping\n") end
@@ -62,7 +58,6 @@ function runScripts(granularity)
    end
 
    local granularity_id = alert_consts.alerts_granularities[granularity].granularity_id
-   local interface_key   = "iface_"..ifid
 
    local info = interface.getStats()
    local cur_alerts = interface.getAlerts(granularity_id)
@@ -96,6 +91,9 @@ end
 
 -- #################################################################
 
+-- This function is called by NetworkInterface.cpp:9234
+-- and it is called when clicking the release button
+-- it's not a periodic script
 function releaseAlerts(granularity)
   local ifid = interface.getId()
   local entity_info = alerts_api.interfaceAlertEntity(ifid)

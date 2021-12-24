@@ -123,13 +123,14 @@ void PeriodicActivities::startPeriodicActivitiesLoop() {
   static activity_descr ad[] = {
     // Script                  Periodicity (s) Max (s) Pool                       Align  !View  !PCAP
     { SECOND_SCRIPT_DIR,                    1,     65, second_thread_pool,        false, false, true  }, 
+    { FIVE_SECOND_SCRIPT_DIR,               5,     65, second_thread_pool,        false, false, true  }, 
     { MINUTE_SCRIPT_DIR,                   60,     60, minute_thread_pool,        false, false, true  },
     { FIVE_MINUTES_SCRIPT_DIR,            300,    300, five_minute_thread_pool,   false, false, true  },
     { HOURLY_SCRIPT_DIR,                 3600,    600, hourly_thread_pool,        false, false, true  },
     { DAILY_SCRIPT_DIR,                 86400,   3600, daily_thread_pool,         true,  false, true  },
 
     /* TODO: remove these two periodic scripts */
-    { HOUSEKEEPING_SCRIPT_PATH,             1,     65, housekeeping_pool,         false, false, false }, 
+    { HOUSEKEEPING_SCRIPT_PATH,             3,     65, housekeeping_pool,         false, false, false }, 
     { NULL,                                 0,      0, NULL,                      false, false, false }
   };
 

@@ -946,8 +946,9 @@
 
 
 #define SECOND_SCRIPT_DIR                   "second"
+#define FIVE_SECOND_SCRIPT_DIR              "5second"
 #define MINUTE_SCRIPT_DIR                   "minute"
-#define FIVE_MINUTES_SCRIPT_DIR             "5min"
+#define FIVE_MINUTES_SCRIPT_DIR             "5minute"
 #define HOURLY_SCRIPT_DIR                   "hourly"
 #define DAILY_SCRIPT_DIR                    "daily"
 

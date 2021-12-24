@@ -5,7 +5,7 @@
 local dirs = ntop.getDirs()
 package.path = dirs.installdir .. "/scripts/lua/modules/?.lua;" .. package.path
 package.path = dirs.installdir .. "/scripts/lua/modules/timeseries/?.lua;" .. package.path
-
+require "lua_utils"
 -- do NOT include lua_utils here, it's not necessary, keep it light!
 local callback_utils = require "callback_utils"
 -- Toggle debug
