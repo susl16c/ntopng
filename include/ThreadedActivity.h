@@ -34,21 +34,19 @@ class ThreadedActivity {
   u_int32_t deadline_approaching_secs;
   bool thread_started;
   bool systemTaskRunning;
-  ThreadedActivityState *interfaceTasksRunning;
   Mutex m;
   PeriodicScript *periodic_script;
-  ThreadedActivityStats *threaded_activity_stats[MAX_NUM_INTERFACE_IDS + 1 /* For the system interface */];
-
+  std::map<std::string, ThreadedActivityStats*> threaded_activity_stats;
   void setDeadlineApproachingSecs();
   void periodicActivityBody();
   void aperiodicActivityBody();
   void schedulePeriodicActivity(ThreadPool *pool, time_t scheduled_time, time_t deadline);
-  ThreadedActivityState *getThreadedActivityState(NetworkInterface *iface) const;
-  void updateThreadedActivityStatsBegin(NetworkInterface *iface, struct timeval *begin);
-  void updateThreadedActivityStatsEnd(NetworkInterface *iface, u_long latest_duration);
+  ThreadedActivityState getThreadedActivityState(NetworkInterface *iface, char *script_name);
+  void updateThreadedActivityStatsBegin(NetworkInterface *iface, char *script_name, struct timeval *begin);
+  void updateThreadedActivityStatsEnd(NetworkInterface *iface, char *script_name, u_long latest_duration);
   void reloadVm(const char *ifname);
   LuaEngine* loadVm(char *script_path, NetworkInterface *iface, time_t when);
-  void set_state(NetworkInterface *iface, ThreadedActivityState ta_state);
+  void set_state(NetworkInterface *iface, char *script_name, ThreadedActivityState ta_state);
   static const char* get_state_label(ThreadedActivityState ta_state);
 
  public:
@@ -71,19 +69,21 @@ class ThreadedActivity {
   bool isTerminating();
 
   void run();
-  void set_state_sleeping(NetworkInterface *iface);
-  void set_state_queued(NetworkInterface *iface);
-  void set_state_running(NetworkInterface *iface);
-  bool isQueueable(NetworkInterface *iface) const;
-  bool isDeadlineApproaching(time_t deadline) const;
+  void set_state_sleeping(NetworkInterface *iface, char *script_name);
+  void set_state_queued(NetworkInterface *iface, char *script_name);
+  void set_state_running(NetworkInterface *iface, char *script_name);
+  bool isQueueable(NetworkInterface *iface, char *script_path);
+  bool isDeadlineApproaching(time_t deadline);
   u_int32_t getPeriodicity();
   u_int32_t getMaxDuration();
   bool excludePcap();
   bool excludeViewedIfaces();
   ThreadPool *getPool();
   bool alignToLocalTime();
-  ThreadedActivityState get_state(NetworkInterface *iface) const;
-  ThreadedActivityStats *getThreadedActivityStats(NetworkInterface *iface, bool allocate_if_missing);
+  ThreadedActivityState get_state(NetworkInterface *iface, char *script_name);
+  ThreadedActivityStats *getThreadedActivityStats(NetworkInterface *iface,
+						  char *script_name,
+						  bool allocate_if_missing);
 
   void lua(NetworkInterface *iface, lua_State *vm);
 };

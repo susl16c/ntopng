@@ -1605,9 +1605,11 @@ static int ntop_send_tcp_data(lua_State* vm) {
 static int ntop_script_is_deadline_approaching(lua_State* vm) {
   struct ntopngLuaContext *ctx = getLuaVMContext(vm);
 
-  if(ctx && ctx->deadline && ctx->threaded_activity)
-    lua_pushboolean(vm, ctx->threaded_activity->isDeadlineApproaching(ctx->deadline));
-  else
+  if(ctx && ctx->deadline && ctx->threaded_activity) {
+    ThreadedActivity *ta = (ThreadedActivity*)ctx->threaded_activity;
+
+    lua_pushboolean(vm, ta->isDeadlineApproaching(ctx->deadline));
+  } else
     lua_pushboolean(vm, false);
 
   return CONST_LUA_OK;

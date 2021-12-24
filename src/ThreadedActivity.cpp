@@ -43,13 +43,7 @@ ThreadedActivity::ThreadedActivity(const char* _path,
 				   ThreadPool *_pool) {
   terminating = false;
   thread_started = false;
-  interfaceTasksRunning = (ThreadedActivityState*) calloc(MAX_NUM_INTERFACE_IDS + 1 /* For the system interface */, sizeof(ThreadedActivityState));
   
-  for(int i = 0; i < MAX_NUM_INTERFACE_IDS + 1; i++)
-    interfaceTasksRunning[i] = threaded_activity_state_sleeping;
-  
-  memset(threaded_activity_stats, 0, sizeof(threaded_activity_stats));
-
   periodic_script = new (std::nothrow) PeriodicScript(_path,
                                                       _periodicity_seconds,
                                                       _max_duration_seconds,
@@ -59,10 +53,6 @@ ThreadedActivity::ThreadedActivity(const char* _path,
                                                       _pool);
   
   setDeadlineApproachingSecs();
-  
-#ifdef THREADED_DEBUG
-  ntop->getTrace()->traceEvent(TRACE_WARNING, "[%p] Creating ThreadedActivity '%s'", this, path);
-#endif
 }
 
 /* ******************************************* */
@@ -74,14 +64,11 @@ ThreadedActivity::~ThreadedActivity() {
   */
   terminateEnqueueLoop();
 
-  for(u_int i = 0; i < MAX_NUM_INTERFACE_IDS; i++) {
-    if(threaded_activity_stats[i])
-      delete threaded_activity_stats[i];
+  for(std::map<std::string, ThreadedActivityStats*>::iterator it = threaded_activity_stats.begin();
+      it != threaded_activity_stats.end(); ++it) {
+    delete it->second;
   }
   
-  if(interfaceTasksRunning)
-    free(interfaceTasksRunning);
-
   if(periodic_script) delete periodic_script;
 }
 
@@ -128,42 +115,16 @@ bool ThreadedActivity::isTerminating() {
 
 /* ******************************************* */
 
-ThreadedActivityState *ThreadedActivity::getThreadedActivityState(NetworkInterface *iface) const {
+ThreadedActivityState ThreadedActivity::getThreadedActivityState(NetworkInterface *iface, char *script_name) {
   if(iface) {
-    /* As the system interface has id -1, we add 1 to the offset to access the array.
-       The array is allocated in the constructor with MAX_NUM_INTERFACE_IDS + 1 to also
-       accomodate the system interface */
-    int stats_idx = iface->get_id() + 1;
+    ThreadedActivityStats *s = getThreadedActivityStats(iface, script_name, false);
 
-    if(stats_idx >= 0 && stats_idx < MAX_NUM_INTERFACE_IDS + 1)
-      return &interfaceTasksRunning[stats_idx];
-    else {
-      return NULL;
-    }
+    if(s)
+      return(s->getState());
   } else
     ntop->getTrace()->traceEvent(TRACE_ERROR, "Internal error. NULL interface.");
 
-  return NULL;
-}
-
-/* ******************************************* */
-
-const char* ThreadedActivity::get_state_label(ThreadedActivityState ta_state) {
-  switch(ta_state) {
-  case threaded_activity_state_sleeping:
-    return("sleeping");
-    break;
-  case threaded_activity_state_queued:
-    return("queued");
-    break;
-  case threaded_activity_state_running:
-    return("running");
-    break;
-  case threaded_activity_state_unknown:
-  default:
-    return("unknown");
-    break;
-  }
+  return(threaded_activity_state_unknown);
 }
 
 /* ******************************************* */
@@ -182,70 +143,77 @@ static bool skipExecution(const char *path) {
 
 /* ******************************************* */
 
-void ThreadedActivity::set_state(NetworkInterface *iface, ThreadedActivityState ta_state) {
-  ThreadedActivityState *cur_state = getThreadedActivityState(iface);
+void ThreadedActivity::set_state(NetworkInterface *iface,
+				 char *script_name,
+				 ThreadedActivityState ta_state) {
+  ThreadedActivityStats *s = getThreadedActivityStats(iface, script_name, false);
 
-  if(cur_state) {
-    if((*cur_state == threaded_activity_state_queued
-	&& ta_state != threaded_activity_state_running)
-       || (*cur_state == threaded_activity_state_running
-	   && ta_state != threaded_activity_state_sleeping))
-      ntop->getTrace()->traceEvent(TRACE_ERROR, "Internal error. Invalid state transition. [path: %s][iface: %s]",
-				   activityPath(), iface->get_name());
-    /* Everything is OK, let's set the state. */
-    *cur_state = ta_state;
+  if(s)
+    s->setState(ta_state);
+}
+
+/* ******************************************* */
+
+ThreadedActivityState ThreadedActivity::get_state(NetworkInterface *iface,
+						  char *script_name) {
+  ThreadedActivityStats *s = getThreadedActivityStats(iface, script_name, false);
+
+  if(s)
+    return s->getState();
+
+  return threaded_activity_state_unknown;
+}
+
+/* ******************************************* */
+
+void ThreadedActivity::set_state_sleeping(NetworkInterface *iface,
+					  char *script_name) {
+  set_state(iface, script_name, threaded_activity_state_sleeping);
+}
+
+/* ******************************************* */
+
+void ThreadedActivity::set_state_queued(NetworkInterface *iface,
+					char *script_name) {
+  ThreadedActivityStats *s = getThreadedActivityStats(iface, script_name, false);
+
+  if(s) {
+    s->setState(threaded_activity_state_queued);
+    s->updateStatsQueuedTime(time(NULL));
   }
 }
 
 /* ******************************************* */
 
-ThreadedActivityState ThreadedActivity::get_state(NetworkInterface *iface) const {
-  ThreadedActivityState *cur_state = getThreadedActivityState(iface);
-
-  if(cur_state)
-    return *cur_state;
-
-  return threaded_activity_state_unknown;
-
+void ThreadedActivity::set_state_running(NetworkInterface *iface, char *script_name) {
+  set_state(iface, script_name, threaded_activity_state_running);
 }
 
 /* ******************************************* */
 
-void ThreadedActivity::set_state_sleeping(NetworkInterface *iface) {
-  set_state(iface, threaded_activity_state_sleeping);
+bool ThreadedActivity::isQueueable(NetworkInterface *iface, char *script_path) {
+  ThreadedActivityState cur_state = getThreadedActivityState(iface, script_path);
+
+  switch(cur_state) {
+  case threaded_activity_state_sleeping:
+  case threaded_activity_state_unknown:
+    return(true);
+    break;
+    
+  default:
+#ifdef THREAD_DEBUG
+    ntop->getTrace()->traceEvent(TRACE_NORMAL, "ThreadedActivity::isQueueable(%s)", Utils::get_state_label(cur_state));
+#endif       
+    return(false);
+    break;
+  }
+
+  return(false); /* NOTREACHED */
 }
 
 /* ******************************************* */
 
-void ThreadedActivity::set_state_queued(NetworkInterface *iface) {
-  ThreadedActivityStats *ta_stats = getThreadedActivityStats(iface, true /* Allocate if missing */);
-
-  set_state(iface, threaded_activity_state_queued);
-
-  if(ta_stats)
-    ta_stats->updateStatsQueuedTime(time(NULL));
-}
-
-/* ******************************************* */
-
-void ThreadedActivity::set_state_running(NetworkInterface *iface) {
-  set_state(iface, threaded_activity_state_running);
-}
-
-/* ******************************************* */
-
-bool ThreadedActivity::isQueueable(NetworkInterface *iface) const {
-  ThreadedActivityState *cur_state = getThreadedActivityState(iface);
-
-  if(cur_state && *cur_state == threaded_activity_state_sleeping)
-    return true;
-
-  return false;
-}
-
-/* ******************************************* */
-
-bool ThreadedActivity::isDeadlineApproaching(time_t deadline) const {
+bool ThreadedActivity::isDeadlineApproaching(time_t deadline) {
   if(terminating)
     return true;
 
@@ -293,37 +261,45 @@ void ThreadedActivity::run() {
 
 /* ******************************************* */
 
-ThreadedActivityStats *ThreadedActivity::getThreadedActivityStats(NetworkInterface *iface, bool allocate_if_missing) {
+ThreadedActivityStats* ThreadedActivity::getThreadedActivityStats(NetworkInterface *iface,
+								  char *script_name,
+								  bool allocate_if_missing) {
   ThreadedActivityStats *ta = NULL;
 
   if(!isTerminating() && iface) {
-    /* As the system interface has id -1, we add 1 to the offset to access the array of stats.
-       The array of stats is allocated in the constructor with MAX_NUM_INTERFACE_IDS + 1 to also
-       accomodate the system interface */
-    int stats_idx = iface->get_id() + 1;
+    std::string key = std::to_string(iface->get_id()) + "/" + std::string(script_name);
+    std::map<std::string, ThreadedActivityStats*>::iterator it = threaded_activity_stats.find(key);
 
-    if(stats_idx >= 0 && stats_idx < MAX_NUM_INTERFACE_IDS + 1) {
-      if(!threaded_activity_stats[stats_idx]) {
-	if(allocate_if_missing) {
-	  try {
-	    ta = new ThreadedActivityStats(this);
-	  } catch(std::bad_alloc& ba) {
-	    return NULL;
-	  }
-	  threaded_activity_stats[stats_idx] = ta;
+#ifdef THREAD_DEBUG
+    // ntop->getTrace()->traceEvent(TRACE_WARNING, "%s() [%s]", __FUNCTION__, key.c_str());
+#endif
+
+    if(it == threaded_activity_stats.end()) {
+      /* Not found */
+      if(allocate_if_missing) {
+	try {
+	  ta = new ThreadedActivityStats(this);
+	} catch(std::bad_alloc& ba) {
+	  return NULL;
 	}
-      } else
-	ta = threaded_activity_stats[stats_idx];
+
+	threaded_activity_stats[key] = ta;
+      }
+      
+      return(ta);
+    } else {
+      return(it->second);
     }
   }
-
+  
   return ta;
 }
 
 /* ******************************************* */
 
-void ThreadedActivity::updateThreadedActivityStatsBegin(NetworkInterface *iface, struct timeval *begin) {
-  ThreadedActivityStats *ta = getThreadedActivityStats(iface, true /* Allocate if missing */);
+  void ThreadedActivity::updateThreadedActivityStatsBegin(NetworkInterface *iface,
+							  char *script_name, struct timeval *begin) {
+    ThreadedActivityStats *ta = getThreadedActivityStats(iface, script_name, true /* Allocate if missing */);
 
   if(ta)
     ta->updateStatsBegin(begin);
@@ -331,8 +307,8 @@ void ThreadedActivity::updateThreadedActivityStatsBegin(NetworkInterface *iface,
 
 /* ******************************************* */
 
-void ThreadedActivity::updateThreadedActivityStatsEnd(NetworkInterface *iface, u_long latest_duration) {
-  ThreadedActivityStats *ta = getThreadedActivityStats(iface, true /* Allocate if missing */);
+void ThreadedActivity::updateThreadedActivityStatsEnd(NetworkInterface *iface, char *script_name, u_long latest_duration) {
+  ThreadedActivityStats *ta = getThreadedActivityStats(iface, script_name, true /* Allocate if missing */);
 
   if(ta)
     ta->updateStatsEnd(latest_duration);
@@ -349,9 +325,9 @@ void ThreadedActivity::runSystemScript(time_t now) {
 	   ntop->get_callbacks_dir(), activityPath());
 
   if(stat(script_path, &buf) == 0) {
-    set_state_running(ntop->getSystemInterface());
+    set_state_running(ntop->getSystemInterface(), script_path);
     runScript(now, script_path, ntop->getSystemInterface(), now + getMaxDuration() /* this is the deadline */);
-    set_state_sleeping(ntop->getSystemInterface());
+    set_state_sleeping(ntop->getSystemInterface(), script_path);
   } else
     ntop->getTrace()->traceEvent(TRACE_WARNING, "Unable to find script %s", activityPath());
 }
@@ -359,11 +335,11 @@ void ThreadedActivity::runSystemScript(time_t now) {
 /* ******************************************* */
 
 /* Run a script - both periodic and one-shot scripts are called here */
-void ThreadedActivity::runScript(time_t now, char *script_path, NetworkInterface *iface, time_t deadline) {
+void ThreadedActivity::runScript(time_t now, char *script_name, NetworkInterface *iface, time_t deadline) {
   LuaEngine *l = NULL;
   u_long msec_diff;
   struct timeval begin, end;
-  ThreadedActivityStats *thstats = getThreadedActivityStats(iface, true);
+  ThreadedActivityStats *thstats = getThreadedActivityStats(iface, script_name, true);
 
   if(!iface)
     return;
@@ -378,9 +354,9 @@ void ThreadedActivity::runScript(time_t now, char *script_path, NetworkInterface
   // ntop->getTrace()->traceEvent(TRACE_WARNING, "[%p] Running %s", this, activityPath());
 #endif
 
-  ntop->getTrace()->traceEvent(TRACE_INFO, "Running %s (iface=%p)", script_path, iface);
+  ntop->getTrace()->traceEvent(TRACE_INFO, "Running %s (iface=%p)", script_name, iface);
 
-  l = loadVm(script_path, iface, now);
+  l = loadVm(script_name, iface, now);
   if(!l) {
     ntop->getTrace()->traceEvent(TRACE_ERROR, "Unable to load the Lua vm [%s][vm: %s]", iface->get_name(), activityPath());
     return;
@@ -399,7 +375,7 @@ void ThreadedActivity::runScript(time_t now, char *script_path, NetworkInterface
   }
 
   gettimeofday(&begin, NULL);
-  updateThreadedActivityStatsBegin(iface, &begin);
+  updateThreadedActivityStatsBegin(iface, script_name, &begin);
 
   /* Set the current time globally  */
   lua_pushinteger(l->getState(), now);
@@ -408,7 +384,7 @@ void ThreadedActivity::runScript(time_t now, char *script_path, NetworkInterface
 
   gettimeofday(&end, NULL);
   msec_diff = (end.tv_sec - begin.tv_sec) * 1000 + (end.tv_usec - begin.tv_usec) / 1000;
-  updateThreadedActivityStatsEnd(iface, msec_diff);
+  updateThreadedActivityStatsEnd(iface, script_name, msec_diff);
 
   if(thstats && isDeadlineApproaching(deadline))
     thstats->setSlowPeriodicActivity(true);
@@ -419,14 +395,14 @@ void ThreadedActivity::runScript(time_t now, char *script_path, NetworkInterface
 
 /* ******************************************* */
 
-LuaEngine* ThreadedActivity::loadVm(char *script_path, NetworkInterface *iface, time_t when) {
+LuaEngine* ThreadedActivity::loadVm(char *script_name, NetworkInterface *iface, time_t when) {
   LuaEngine *l = NULL;
 
   try {
     /* NOTE: this needs to be deallocated by the caller */
     l = new LuaEngine(NULL);
 
-    if(l->load_script(script_path, iface) != 0) {
+    if(l->load_script(script_name, iface) != 0) {
       delete l;
       l = NULL;
     }
@@ -515,8 +491,13 @@ void ThreadedActivity::schedulePeriodicActivity(ThreadPool *pool, time_t schedul
       while((ent = readdir(dir_struct)) != NULL) {
         if(ent->d_name[0] != '.') { 
           char script_path[MAX_PATH];
+	  
 	  /* Schedule interface script, one for each interface */
           snprintf(script_path, sizeof(script_path), "%s%s", dir_path, ent->d_name);
+
+#ifdef THREAD_DEBUG
+	  ntop->getTrace()->traceEvent(TRACE_NORMAL, "Processing %s", script_path);
+#endif
 
           if(pool->queueJob(this, script_path, ntop->getSystemInterface(), scheduled_time, deadline)) {
 #ifdef THREAD_DEBUG
@@ -557,6 +538,7 @@ void ThreadedActivity::schedulePeriodicActivity(ThreadPool *pool, time_t schedul
             /* Running the script for each interface if it's not a PCAP */
             if(iface &&	(iface->getIfType() != interface_type_PCAP_DUMP || !excludePcap())) {      
               char script_path[MAX_PATH];
+	      
 	      /* Schedule interface script, one for each interface */
               snprintf(script_path, sizeof(script_path), "%s%s", dir_path, ent->d_name);       
          
@@ -578,14 +560,20 @@ void ThreadedActivity::schedulePeriodicActivity(ThreadPool *pool, time_t schedul
 /* ******************************************* */
 
 void ThreadedActivity::lua(NetworkInterface *iface, lua_State *vm) {
-  ThreadedActivityStats *ta = getThreadedActivityStats(iface, false /* Do not allocate if missing */);
+  ThreadedActivityStats *ta;
+  std::map<std::string, ThreadedActivityStats*>::iterator it = threaded_activity_stats.begin();   /* TO FIX */
 
+  if(it != threaded_activity_stats.end())
+    ta = it->second;
+  else
+    ta = NULL;
+  
   if(ta) {
     lua_newtable(vm);
 
     ta->lua(vm);
 
-    lua_push_str_table_entry(vm, "state", get_state_label(get_state(iface)));
+    lua_push_str_table_entry(vm, "state", Utils::get_state_label(ta->getState()));
     lua_push_uint64_table_entry(vm, "periodicity", getPeriodicity());
     lua_push_uint64_table_entry(vm, "max_duration_secs", getMaxDuration());
     lua_push_uint64_table_entry(vm, "deadline_secs", deadline_approaching_secs);

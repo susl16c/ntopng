@@ -21,7 +21,7 @@
 
 #include "ntop_includes.h"
 
-// #define THREAD_DEBUG 1
+//#define THREAD_DEBUG 1
 
 /* **************************************************** */
 
@@ -62,10 +62,6 @@ ThreadPool::~ThreadPool() {
   shutdown();
 
   for(vector<pthread_t>::const_iterator it = threadsState.begin(); it != threadsState.end(); ++it) {
-#ifdef THREAD_DEBUG
-    ntop->getTrace()->traceEvent(TRACE_NORMAL, "Threads still running %d", pool_size-i);
-#endif
-
     pthread_cond_signal(&condvar);
     pthread_join(*it, &res);
   }
@@ -90,7 +86,10 @@ bool ThreadPool::spawn() {
 #endif
       num_threads++;
 
+#ifdef THREAD_DEBUG
       ntop->getTrace()->traceEvent(TRACE_NORMAL, "Spawn thread [total: %u]", num_threads);
+#endif
+      
       return(true);
     }
   }
@@ -124,10 +123,17 @@ void ThreadPool::run() {
       if(q) delete q;
       break;
     } else {
+#ifdef THREAD_DEBUG
+      ntop->getTrace()->traceEvent(TRACE_NORMAL, "(**) Started task [%s][%s]",  q->script_path, q->iface->get_name());
+#endif
       Utils::setThreadName(q->script_path);
-      q->j->set_state_running(q->iface);
+      q->j->set_state_running(q->iface, q->script_path);
       q->j->runScript(time(NULL), q->script_path, q->iface, q->deadline);
-      q->j->set_state_sleeping(q->iface);
+      q->j->set_state_sleeping(q->iface, q->script_path);
+#ifdef THREAD_DEBUG
+      ntop->getTrace()->traceEvent(TRACE_NORMAL, "(**) Completed task [%s][%s]",  q->script_path, q->iface->get_name());
+#endif
+
       delete q;
     }
   }
@@ -143,31 +149,35 @@ bool ThreadPool::queueJob(ThreadedActivity *ta, char *script_path,
 			  NetworkInterface *iface,
 			  time_t scheduled_time, time_t deadline) {
   QueuedThreadData *q;
-  ThreadedActivityStats *stats = ta->getThreadedActivityStats(iface, true);
+  ThreadedActivityStats *stats = NULL;
   
   if(isTerminating())
     return(false);
 
-  if(!ta->isQueueable(iface)) {
-    ThreadedActivityState ta_state = ta->get_state(iface);
-
-#ifdef THREAD_DEBUG
-    char deadline_buf[32];
-    time_t stats_deadline = stats->getDeadline();
-    struct tm deadline_tm;
-
-    strftime(deadline_buf, sizeof(deadline_buf), "%H:%M:%S", localtime_r(&stats_deadline, &deadline_tm));
-    ntop->getTrace()->traceEvent(TRACE_WARNING, "Unable to schedule %s [running: %u][deadlline: %s]", script_path, ta_state == threaded_activity_state_running ? 1 : 0, deadline_buf);
-#endif
+  if(!ta->isQueueable(iface, script_path)) {
+    stats = ta->getThreadedActivityStats(iface, script_path, true);
 
     if(stats) {
+      ThreadedActivityState ta_state = stats->getState();
+      
+#ifdef THREAD_DEBUG
+      char deadline_buf[32];
+      time_t stats_deadline = stats->getDeadline();
+      struct tm deadline_tm;
+      
+      strftime(deadline_buf, sizeof(deadline_buf), "%H:%M:%S", localtime_r(&stats_deadline, &deadline_tm));
+      ntop->getTrace()->traceEvent(TRACE_WARNING, "Unable to schedule %s [running: %u][deadlline: %s]",
+				   script_path, ta_state == threaded_activity_state_running ? 1 : 0, deadline_buf);
+#endif
+
       if(ta_state == threaded_activity_state_queued) {
 	/*
 	  If here, the periodic activity has been waiting in queue for too long and no thread has dequeued it.
 	  Hence, we can try and spawn an additional thread, up to a maximum
 	*/
 #ifdef THREAD_DEBUG
-	ntop->getTrace()->traceEvent(TRACE_WARNING, "Waiting in queue for too long [%u][%u][%u]", threadsState.size(),
+	ntop->getTrace()->traceEvent(TRACE_WARNING, "Waiting in queue for too long [len: %u/%u][num_interfaces: %u]",
+				     threadsState.size(),
 				     CONST_MAX_NUM_THREADED_ACTIVITIES, ntop->get_num_interfaces() + 1);
 #endif
         stats->setNotExecutedActivity(true);
@@ -175,7 +185,7 @@ bool ThreadPool::queueJob(ThreadedActivity *ta, char *script_path,
 		&& stats->getDeadline() < scheduled_time)
         stats->setSlowPeriodicActivity(true);
     }
-
+    
     return(false); /* Task still running or already queued, don't re-queue it */
   }
 
@@ -188,13 +198,18 @@ bool ThreadPool::queueJob(ThreadedActivity *ta, char *script_path,
 
   m->lock(__FILE__, __LINE__);
 
-  if(threads.size() > 0)
+  if(threads.size() > (num_threads-3)) {
+#ifdef THREAD_DEBUG
+    ntop->getTrace()->traceEvent(TRACE_NORMAL, "Job queue: %u", threads.size());
+#endif
+    
     spawn(); /* Spawn a new thread if there are queued jobs */
+  }
   
   if(stats)
     stats->setScheduledTime(scheduled_time);
 
-  ta->set_state_queued(iface);
+  ta->set_state_queued(iface, script_path);
   threads.push(q);
   
   pthread_cond_signal(&condvar);
@@ -220,6 +235,11 @@ QueuedThreadData* ThreadPool::dequeueJob(bool waitIfEmpty) {
     q = threads.front();
     threads.pop();
   }
+
+#ifdef THREAD_DEBUG
+  ntop->getTrace()->traceEvent(TRACE_NORMAL, "Dequeued job [remaining: %u][%s]",
+			       threads.size(), q ? q->iface->get_name() : "");
+#endif
 
   m->unlock(__FILE__, __LINE__);
 
