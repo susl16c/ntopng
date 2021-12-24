@@ -28,8 +28,7 @@ class PeriodicActivities {
  private:
   ThreadedActivity *activities[CONST_MAX_NUM_THREADED_ACTIVITIES];
   u_int16_t num_activities;
-  ThreadPool *second_thread_pool, *minute_thread_pool, *five_minute_thread_pool, 
-    *hourly_thread_pool, *daily_thread_pool, *housekeeping_pool /* TODO: remove the housekeeping pool*/;
+  ThreadPool *th_pool;
   
   u_int8_t getNumThreadsPerPool(const char* path, std::vector<char*> *iface_scripts_list, std::vector<char*> *system_scripts_list);
   

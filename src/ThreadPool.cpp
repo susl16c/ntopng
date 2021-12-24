@@ -34,12 +34,10 @@ static void* doRun(void* ptr)  {
 
 /* **************************************************** */
 
-ThreadPool::ThreadPool(bool _adaptive_pool_size, u_int8_t _pool_size,
-                       char *comma_separated_affinity_mask) {
+ThreadPool::ThreadPool(char *comma_separated_affinity_mask) {
   m = new (std::nothrow) Mutex();
   pthread_cond_init(&condvar, NULL);
   terminating = false;
-  adaptive_pool_size = _adaptive_pool_size;
 
 #ifdef __linux__
   CPU_ZERO(&affinity_mask);
@@ -50,7 +48,9 @@ ThreadPool::ThreadPool(bool _adaptive_pool_size, u_int8_t _pool_size,
     Utils::setAffinityMask(ntop->getPrefs()->get_other_cpu_affinity(), &affinity_mask);
 #endif
 
-  for(int i = 0; i < _pool_size; i++)
+  num_threads = 0;
+
+  for(u_int i=0; i<5 /* Min number of threads */; i++)
     spawn();
 }
 
@@ -78,16 +78,24 @@ ThreadPool::~ThreadPool() {
 
 /* **************************************************** */
 
-void ThreadPool::spawn() {
+bool ThreadPool::spawn() {
   pthread_t new_thread;
 
-  if(pthread_create(&new_thread, NULL, doRun, (void*)this) == 0) {
-    threadsState.push_back(new_thread);
-
+  if(num_threads < CONST_MAX_NUM_THREADED_ACTIVITIES) {
+    if(pthread_create(&new_thread, NULL, doRun, (void*)this) == 0) {
+      threadsState.push_back(new_thread);
+      
 #ifdef __linux__
-    Utils::setThreadAffinityWithMask(new_thread, &affinity_mask);
+      Utils::setThreadAffinityWithMask(new_thread, &affinity_mask);
 #endif
+      num_threads++;
+
+      ntop->getTrace()->traceEvent(TRACE_NORMAL, "Spawn thread [total: %u]", num_threads);
+      return(true);
+    }
   }
+
+  return(false); /* Something didn't work as expected */
 }
 
 /* **************************************************** */
@@ -131,7 +139,9 @@ void ThreadPool::run() {
 
 /* **************************************************** */
 
-bool ThreadPool::queueJob(ThreadedActivity *ta, char *path, NetworkInterface *iface, time_t scheduled_time, time_t deadline) {
+bool ThreadPool::queueJob(ThreadedActivity *ta, char *script_path,
+			  NetworkInterface *iface,
+			  time_t scheduled_time, time_t deadline) {
   QueuedThreadData *q;
   ThreadedActivityStats *stats = ta->getThreadedActivityStats(iface, true);
   
@@ -147,7 +157,7 @@ bool ThreadPool::queueJob(ThreadedActivity *ta, char *path, NetworkInterface *if
     struct tm deadline_tm;
 
     strftime(deadline_buf, sizeof(deadline_buf), "%H:%M:%S", localtime_r(&stats_deadline, &deadline_tm));
-    ntop->getTrace()->traceEvent(TRACE_WARNING, "Unable to schedule %s [running: %u][deadlline: %s]", path, ta_state == threaded_activity_state_running ? 1 : 0, deadline_buf);
+    ntop->getTrace()->traceEvent(TRACE_WARNING, "Unable to schedule %s [running: %u][deadlline: %s]", script_path, ta_state == threaded_activity_state_running ? 1 : 0, deadline_buf);
 #endif
 
     if(stats) {
@@ -157,29 +167,19 @@ bool ThreadPool::queueJob(ThreadedActivity *ta, char *path, NetworkInterface *if
 	  Hence, we can try and spawn an additional thread, up to a maximum
 	*/
 #ifdef THREAD_DEBUG
-	ntop->getTrace()->traceEvent(TRACE_WARNING, "Waiting in queue for too long [%u][%u][%u]", threadsState.size(), MAX_THREAD_POOL_SIZE, ntop->get_num_interfaces() + 1);
+	ntop->getTrace()->traceEvent(TRACE_WARNING, "Waiting in queue for too long [%u][%u][%u]", threadsState.size(),
+				     CONST_MAX_NUM_THREADED_ACTIVITIES, ntop->get_num_interfaces() + 1);
 #endif
-
-	if(adaptive_pool_size
-	   && (threadsState.size() < MAX_THREAD_POOL_SIZE)
-	   && (threadsState.size() < (u_int32_t)((ntop->get_num_interfaces() + 1 /* System Interface */)))) {
-	  spawn();
-
-#ifdef THREAD_DEBUG
-	  ntop->getTrace()->traceEvent(TRACE_WARNING, "New thread spawned [%u]", threadsState.size());
-#endif
-	}
-
-        stats->setNotExecutedAttivity(true);
+        stats->setNotExecutedActivity(true);
       } else if(ta_state == threaded_activity_state_running
-	      && stats->getDeadline() < scheduled_time)
+		&& stats->getDeadline() < scheduled_time)
         stats->setSlowPeriodicActivity(true);
     }
 
     return(false); /* Task still running or already queued, don't re-queue it */
   }
 
-  q = new (std::nothrow) QueuedThreadData(ta, path, iface, deadline);
+  q = new (std::nothrow) QueuedThreadData(ta, script_path, iface, deadline);
 
   if(!q) {
     ntop->getTrace()->traceEvent(TRACE_WARNING, "Unable to create job");
@@ -188,12 +188,15 @@ bool ThreadPool::queueJob(ThreadedActivity *ta, char *path, NetworkInterface *if
 
   m->lock(__FILE__, __LINE__);
 
+  if(threads.size() > 0)
+    spawn(); /* Spawn a new thread if there are queued jobs */
+  
   if(stats)
     stats->setScheduledTime(scheduled_time);
 
   ta->set_state_queued(iface);
   threads.push(q);
-
+  
   pthread_cond_signal(&condvar);
   m->unlock(__FILE__, __LINE__);
 

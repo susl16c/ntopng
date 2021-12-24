@@ -129,7 +129,7 @@ void ThreadedActivityStats::luaTimeseriesStats(lua_State *vm) {
 
 /* ******************************************* */
 
-void ThreadedActivityStats::setNotExecutedAttivity(bool _not_executed) {
+void ThreadedActivityStats::setNotExecutedActivity(bool _not_executed) {
   not_executed = _not_executed;
   if(_not_executed)
     num_not_executed++;

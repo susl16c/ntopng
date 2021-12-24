@@ -29,15 +29,14 @@ PeriodicScript::PeriodicScript(const char* _path,
 		   bool _align_to_localtime,
 		   bool _exclude_viewed_interfaces,
 		   bool _exclude_pcap_dump_interfaces,
-		   ThreadPool* _pool) {
-    
-    path = strdup(_path);
-    periodicity = _periodicity_seconds;
-    max_duration_secs = _max_duration_seconds;
-    pool = _pool;
-    align_to_localtime = _align_to_localtime;  
-    exclude_viewed_interfaces = _exclude_viewed_interfaces;
-    exclude_pcap_dump_interfaces = _exclude_pcap_dump_interfaces;
+		   ThreadPool* _pool) {    
+  path = strdup(_path);
+  periodicity = _periodicity_seconds;
+  max_duration_secs = _max_duration_seconds;
+  pool = _pool;
+  align_to_localtime = _align_to_localtime;  
+  exclude_viewed_interfaces = _exclude_viewed_interfaces;
+  exclude_pcap_dump_interfaces = _exclude_pcap_dump_interfaces;
 }
 
 /* ******************************************* */

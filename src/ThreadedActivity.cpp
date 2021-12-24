@@ -21,7 +21,7 @@
 
 #include "ntop_includes.h"
 
-// #define THREAD_DEBUG
+#define THREAD_DEBUG
 
 /* **************************************************** */
 
@@ -44,9 +44,10 @@ ThreadedActivity::ThreadedActivity(const char* _path,
   terminating = false;
   thread_started = false;
   interfaceTasksRunning = (ThreadedActivityState*) calloc(MAX_NUM_INTERFACE_IDS + 1 /* For the system interface */, sizeof(ThreadedActivityState));
-  for(int i = 0; i < MAX_NUM_INTERFACE_IDS + 1; i++) {
+  
+  for(int i = 0; i < MAX_NUM_INTERFACE_IDS + 1; i++)
     interfaceTasksRunning[i] = threaded_activity_state_sleeping;
-  }
+  
   threaded_activity_stats = new (std::nothrow) ThreadedActivityStats*[MAX_NUM_INTERFACE_IDS + 1 /* For the system interface */]();
   periodic_script = new (std::nothrow) PeriodicScript(_path,
                                                       _periodicity_seconds,
@@ -246,7 +247,7 @@ bool ThreadedActivity::isQueueable(NetworkInterface *iface) const {
 /* ******************************************* */
 
 bool ThreadedActivity::isDeadlineApproaching(time_t deadline) const {
-  if (terminating)
+  if(terminating)
     return true;
 
   /*
@@ -280,7 +281,7 @@ void ThreadedActivity::run() {
       pcap_dump_only = false;
   }
   /* Don't schedule periodic activities it we are processing pcap files only. */
-  if (excludePcap() && pcap_dump_only)
+  if(excludePcap() && pcap_dump_only)
     return;
 
   if(pthread_create(&pthreadLoop, NULL, startActivity, (void*)this) == 0) {
@@ -394,7 +395,7 @@ void ThreadedActivity::runScript(time_t now, char *script_path, NetworkInterface
     thstats->setCurrentProgress(0);
 
     /* Reset the internal state for the current execution */
-    thstats->setNotExecutedAttivity(false);
+    thstats->setNotExecutedActivity(false);
     thstats->setSlowPeriodicActivity(false);
   }
 
@@ -502,10 +503,14 @@ void ThreadedActivity::schedulePeriodicActivity(ThreadPool *pool, time_t schedul
 #endif
 
   if(stat(dir_path, &buf) == 0) {
+#ifdef THREAD_DEBUG
+    ntop->getTrace()->traceEvent(TRACE_NORMAL, "Running scripts in %s", dir_path);
+#endif
+    
     /* Open the directory and run all the scripts inside it */
-    if ((dir_struct = opendir (dir_path)) != NULL) {
-      while ((ent = readdir (dir_struct)) != NULL) {
-        if (ent->d_name[0] != '.') { 
+    if((dir_struct = opendir(dir_path)) != NULL) {
+      while((ent = readdir(dir_struct)) != NULL) {
+        if(ent->d_name[0] != '.') { 
           char script_path[MAX_PATH];
 	  /* Schedule interface script, one for each interface */
           snprintf(script_path, sizeof(script_path), "%s%s", dir_path, ent->d_name);
@@ -534,17 +539,20 @@ void ThreadedActivity::schedulePeriodicActivity(ThreadPool *pool, time_t schedul
   }
 #endif
 
-  if (stat(dir_path, &buf) == 0) {
+  if(stat(dir_path, &buf) == 0) {
+#ifdef THREAD_DEBUG
+    ntop->getTrace()->traceEvent(TRACE_NORMAL, "Running scripts in %s", dir_path);
+#endif
+    
     /* Open the directory e run all the scripts inside it */
-    if ((dir_struct = opendir (dir_path)) != NULL) {
-      while ((ent = readdir (dir_struct)) != NULL) {
-        if (ent->d_name[0] != '.') { /* Excluding . and .. directories */
+    if((dir_struct = opendir(dir_path)) != NULL) {
+      while((ent = readdir(dir_struct)) != NULL) {
+        if(ent->d_name[0] != '.') { /* Excluding . and .. directories */
           for(int i = 0; i < ntop->get_num_interfaces(); i++) {
             NetworkInterface *iface = ntop->getInterface(i);
             
             /* Running the script for each interface if it's not a PCAP */
-            if (iface &&
-		(iface->getIfType() != interface_type_PCAP_DUMP || !excludePcap())) {      
+            if(iface &&	(iface->getIfType() != interface_type_PCAP_DUMP || !excludePcap())) {      
               char script_path[MAX_PATH];
 	      /* Schedule interface script, one for each interface */
               snprintf(script_path, sizeof(script_path), "%s%s", dir_path, ent->d_name);       

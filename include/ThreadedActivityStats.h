@@ -87,7 +87,7 @@ class ThreadedActivityStats {
   void updateStatsBegin(struct timeval *begin);
   void updateStatsEnd(u_long duration_ms);
 
-  void setNotExecutedAttivity(bool _not_executed);
+  void setNotExecutedActivity(bool _not_executed);
   void setSlowPeriodicActivity(bool _slow);
   inline void setScheduledTime(time_t t) { scheduled_time = t; }
   inline void setDeadline(time_t t)      { deadline = t; }

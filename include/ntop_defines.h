@@ -927,8 +927,6 @@
 #define NTOPNG_WIDGET_KEY                    "ntopng.widgets"
 #define NTOPNG_WIDGET_URL                    "/widgets/"
 
-#define CONST_MAX_NUM_THREADED_ACTIVITIES 64
-
 #define UPGRADE_SCRIPT_PATH                  "upgrade.lua"
 #define PINGER_SCRIPT_PATH                   "pinger.lua"
 #define STATS_UPDATE_SCRIPT_PATH             "stats_update.lua"
@@ -1148,15 +1146,9 @@ extern struct ntopngLuaContext* getUserdata(struct lua_State *vm);
   Queue length for view interfaces
  */
 
-#define MAX_VIEW_INTERFACE_QUEUE_LEN       131072
+#define MAX_VIEW_INTERFACE_QUEUE_LEN      131072
 
-#ifdef NTOPNG_EMBEDDED_EDITION
-#define DEFAULT_THREAD_POOL_SIZE     1
-#define MAX_THREAD_POOL_SIZE         1
-#else
-#define DEFAULT_THREAD_POOL_SIZE     2
-#define MAX_THREAD_POOL_SIZE        32
-#endif
+#define CONST_MAX_NUM_THREADED_ACTIVITIES 64
 
 #define DONT_NOT_EXPIRE_BEFORE_SEC        15 /* sec */
 #define MAX_NDPI_IDLE_TIME_BEFORE_GUESS   5 /* sec */
