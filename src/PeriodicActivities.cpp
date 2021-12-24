@@ -25,10 +25,25 @@ typedef struct _activity_descr {
   const char *path;
   u_int32_t periodicity;
   u_int32_t max_duration_secs;
-  bool align_to_localtime;  
+  bool align_to_localtime;
   bool exclude_viewed_interfaces;
   bool exclude_pcap_dump_interfaces;
+  ThreadedActivity *ta;
 } activity_descr;
+
+static activity_descr ad[] = {
+  // Script                  Periodicity (s) Max (s) Align  !View  !PCAP NULL
+  { SECOND_SCRIPT_DIR,                    1,     65, false, false, true, NULL },
+  { FIVE_SECOND_SCRIPT_DIR,               5,     65, false, false, true, NULL },
+  { MINUTE_SCRIPT_DIR,                   60,     60, false, false, true, NULL },
+  { FIVE_MINUTES_SCRIPT_DIR,            300,    300, false, false, true, NULL },
+  { HOURLY_SCRIPT_DIR,                 3600,    600, false, false, true, NULL },
+  { DAILY_SCRIPT_DIR,                 86400,   3600, true,  false, true, NULL },
+  
+  /* TODO: remove these two periodic scripts */
+  { HOUSEKEEPING_SCRIPT_PATH,             3,     65, false, false, false, NULL },
+  { NULL,                                 0,      0, false, false, false, NULL }
+};
 
 /* ******************************************* */
 
@@ -54,12 +69,12 @@ PeriodicActivities::~PeriodicActivities() {
   }
 
   delete th_pool;
-  
+
   /* Now it's safe to delete the activities as no other thread is executing
    * their code. */
   for(u_int16_t i = 0; i < CONST_MAX_NUM_THREADED_ACTIVITIES; i++) {
     if(activities[i]) {
-      delete activities[i];
+      delete activities[i]; /* This line calls ThreadedActivity::~ThreadedActivity() */
       activities[i] = NULL;
       num_activities--;
     }
@@ -89,7 +104,7 @@ void PeriodicActivities::sendShutdownSignal() {
 void PeriodicActivities::startPeriodicActivitiesLoop() {
   struct stat buf;
   ThreadedActivity *startup_activity;
-  
+
   ntop->getTrace()->traceEvent(TRACE_NORMAL, "Started periodic activities loop...");
 
   if(stat(ntop->get_callbacks_dir(), &buf) != 0) {
@@ -104,45 +119,27 @@ void PeriodicActivities::startPeriodicActivitiesLoop() {
   if((startup_activity = new (std::nothrow) ThreadedActivity(STARTUP_SCRIPT_PATH))) {
     /*
       Don't call run() as by the time the script will be run
-      the delete below will free the memory 
+      the delete below will free the memory
     */
     startup_activity->runSystemScript(time(NULL));
     delete startup_activity;
     startup_activity = NULL;
   }
 
-  static activity_descr ad[] = {
-    // Script                  Periodicity (s) Max (s) Align  !View  !PCAP
-    { SECOND_SCRIPT_DIR,                    1,     65, false, false, true  }, 
-    { FIVE_SECOND_SCRIPT_DIR,               5,     65, false, false, true  }, 
-    { MINUTE_SCRIPT_DIR,                   60,     60, false, false, true  },
-    { FIVE_MINUTES_SCRIPT_DIR,            300,    300, false, false, true  },
-    { HOURLY_SCRIPT_DIR,                 3600,    600, false, false, true  },
-    { DAILY_SCRIPT_DIR,                 86400,   3600, true,  false, true  },
-
-    /* TODO: remove these two periodic scripts */
-    { HOUSEKEEPING_SCRIPT_PATH,             1,     65, false, false, false }, 
-    { NULL,                                 0,      0, false, false, false }
-  };
-
-  activity_descr *d = ad;
-  
-  while(d->path) {
+  for(u_int i=0; ad[i].path != NULL; i++) {
     std::vector<char*> iface_scripts_list, system_scripts_list;
 
-    ThreadedActivity *ta = new (std::nothrow) ThreadedActivity(d->path,
-							       d->periodicity,
-							       d->max_duration_secs,
-							       d->align_to_localtime,
-							       d->exclude_viewed_interfaces,
-							       d->exclude_pcap_dump_interfaces,
-							       th_pool);
-    if(ta) {
-      activities[num_activities++] = ta;
-      ta->run();      
+    ad[i].ta = new (std::nothrow) ThreadedActivity(ad[i].path,
+						   ad[i].periodicity,
+						   ad[i].max_duration_secs,
+						   ad[i].align_to_localtime,
+						   ad[i].exclude_viewed_interfaces,
+						   ad[i].exclude_pcap_dump_interfaces,
+						   th_pool);
+    if(ad[i].ta) {
+      activities[num_activities++] = ad[i].ta;
+      ad[i].ta->run();
     }
-
-    d++;
   }
 }
 

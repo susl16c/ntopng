@@ -21,7 +21,7 @@
 
 #include "ntop_includes.h"
 
-#define THREAD_DEBUG
+// #define THREAD_DEBUG
 
 /* **************************************************** */
 
@@ -48,7 +48,8 @@ ThreadedActivity::ThreadedActivity(const char* _path,
   for(int i = 0; i < MAX_NUM_INTERFACE_IDS + 1; i++)
     interfaceTasksRunning[i] = threaded_activity_state_sleeping;
   
-  threaded_activity_stats = new (std::nothrow) ThreadedActivityStats*[MAX_NUM_INTERFACE_IDS + 1 /* For the system interface */]();
+  memset(threaded_activity_stats, 0, sizeof(threaded_activity_stats));
+
   periodic_script = new (std::nothrow) PeriodicScript(_path,
                                                       _periodicity_seconds,
                                                       _max_duration_seconds,
@@ -67,19 +68,17 @@ ThreadedActivity::ThreadedActivity(const char* _path,
 /* ******************************************* */
 
 ThreadedActivity::~ThreadedActivity() {
-  /* NOTE: terminateEnqueueLoop should have already been called by the PeriodicActivities
-   * destructor. */
+  /* 
+     NOTE:
+     terminateEnqueueLoop should have already been called by the PeriodicActivities destructor.
+  */
   terminateEnqueueLoop();
 
-  if(threaded_activity_stats) {
-    for(u_int i = 0; i < MAX_NUM_INTERFACE_IDS; i++) {
-      if(threaded_activity_stats[i])
-	delete threaded_activity_stats[i];
-    }
-
-    delete[] threaded_activity_stats;
+  for(u_int i = 0; i < MAX_NUM_INTERFACE_IDS; i++) {
+    if(threaded_activity_stats[i])
+      delete threaded_activity_stats[i];
   }
-
+  
   if(interfaceTasksRunning)
     free(interfaceTasksRunning);
 
@@ -375,8 +374,8 @@ void ThreadedActivity::runScript(time_t now, char *script_path, NetworkInterface
   if(iface->isViewed() && excludeViewedIfaces())
     return;
 
-#ifdef THREADED_DEBUG
-  ntop->getTrace()->traceEvent(TRACE_WARNING, "[%p] Running %s", this, activityPath());
+#ifdef THREAD_DEBUG
+  // ntop->getTrace()->traceEvent(TRACE_WARNING, "[%p] Running %s", this, activityPath());
 #endif
 
   ntop->getTrace()->traceEvent(TRACE_INFO, "Running %s (iface=%p)", script_path, iface);
@@ -450,11 +449,13 @@ void ThreadedActivity::aperiodicActivityBody() {
 void ThreadedActivity::periodicActivityBody() {
   u_int now;
   u_int32_t next_deadline, next_schedule = (u_int32_t)time(NULL);
-
+  
   next_schedule = Utils::roundTime(next_schedule, getPeriodicity(), 
 				   alignToLocalTime() ? ntop->get_time_offset() : 0);
 
   while(!isTerminating()) {
+    int tdiff;
+    
     now = (u_int)time(NULL);
 
     if(now >= next_schedule) {
@@ -466,7 +467,13 @@ void ThreadedActivity::periodicActivityBody() {
 	schedulePeriodicActivity(getPool(), now, next_deadline);
     }
 
-    sleep(1);
+    tdiff = next_schedule-now;    
+
+#ifdef THREAD_DEBUG
+    ntop->getTrace()->traceEvent(TRACE_NORMAL, "Next schedule: %d [%s]", tdiff, activityPath());
+#endif
+    
+    sleep(tdiff);
   }
 
   /* ntop->getTrace()->traceEvent(TRACE_NORMAL, "Terminating %s(%s) exit", __FUNCTION__, path); */
@@ -486,10 +493,6 @@ void ThreadedActivity::schedulePeriodicActivity(ThreadPool *pool, time_t schedul
   DIR *dir_struct;
   struct dirent *ent;
 
-#ifdef THREAD_DEBUG
-  ntop->getTrace()->traceEvent(TRACE_NORMAL, "%s(%u)", __FUNCTION__, scheduled_time);
-#endif
-  
   /* Schedule system script */
   snprintf(dir_path, sizeof(dir_path), "%s/%s/system/",
 	   ntop->get_callbacks_dir(), activityPath());

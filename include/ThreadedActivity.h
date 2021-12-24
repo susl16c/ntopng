@@ -37,7 +37,7 @@ class ThreadedActivity {
   ThreadedActivityState *interfaceTasksRunning;
   Mutex m;
   PeriodicScript *periodic_script;
-  ThreadedActivityStats **threaded_activity_stats;
+  ThreadedActivityStats *threaded_activity_stats[MAX_NUM_INTERFACE_IDS + 1 /* For the system interface */];
 
   void setDeadlineApproachingSecs();
   void periodicActivityBody();
