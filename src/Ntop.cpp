@@ -54,10 +54,10 @@ extern struct keyval string_to_replace[]; /* LuaEngine.cpp */
 Ntop::Ntop(char *appName) {
   ntop = this;
   globals = new (std::nothrow) NtopGlobals();
-  extract = new (std::nothrow) TimelineExtract();
-  pa      = new (std::nothrow) PeriodicActivities();
+  extract = new (std::nothrow) TimelineExtract(); 
   address = new (std::nothrow) AddressResolution();
   offline = false;
+  pa = NULL;
   custom_ndpi_protos = NULL;
   prefs = NULL, redis = NULL;
 #ifndef HAVE_NEDGE
@@ -432,6 +432,9 @@ void Ntop::registerPrefs(Prefs *_prefs, bool quick_registration) {
 #endif
 #endif
 
+  /* Now we can enable the periodic activities */
+  pa = new (std::nothrow) PeriodicActivities();
+  
   redis->setInitializationComplete();
 }
 
