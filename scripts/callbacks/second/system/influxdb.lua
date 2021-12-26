@@ -10,7 +10,7 @@ package.path = dirs.installdir .. "/scripts/lua/modules/?.lua;" .. package.path
 require "lua_utils"
 local callback_utils = require "callback_utils"
 
--- Run this script for a minute before quittin (this reduces load on Lua VM infrastructure)
+-- Run this script for a minute before quitting (this reduces load on Lua VM infrastructure)
 local num_runs = 60
 
 for i=1,num_runs do
