@@ -884,16 +884,23 @@ static int ntop_getservbyport(lua_State* vm) {
 /* ****************************************** */
 
 static int ntop_msleep(lua_State* vm) {
-  u_int duration, max_duration = 60000 /* 1 min */;
-
+  u_int ms_duration, max_duration = 60000 /* 1 min */;
+  struct timespec ts;
+  
   ntop->getTrace()->traceEvent(TRACE_DEBUG, "%s() called", __FUNCTION__);
 
   if(ntop_lua_check(vm, __FUNCTION__, 1, LUA_TNUMBER) != CONST_LUA_OK) return(ntop_lua_return_value(vm, __FUNCTION__, CONST_LUA_ERROR));
-  duration = (u_int)lua_tonumber(vm, 1);
+  ms_duration = (u_int)lua_tonumber(vm, 1);
 
-  if(duration > max_duration) duration = max_duration;
+  if(ms_duration > max_duration) ms_duration = max_duration;
 
-  _usleep(duration*1000);
+  if(ms_duration > 1000) {
+    ts.tv_sec = ms_duration / 1000ul;
+    ms_duration -= 1000*ts.tv_sec;
+  }
+
+  ts.tv_nsec = ms_duration * 1000;
+  nanosleep(&ts, NULL);
 
   lua_pushnil(vm);
   return(ntop_lua_return_value(vm, __FUNCTION__, CONST_LUA_OK));
