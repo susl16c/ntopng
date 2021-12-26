@@ -59,6 +59,7 @@ class ThreadPool {
     Creates and starts a new pool thread
    */
   bool spawn();
+  bool isQueueable(ThreadedActivityState cur_state);
   
  public:
   ThreadPool(char *comma_separated_affinity_mask = NULL);

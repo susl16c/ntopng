@@ -72,7 +72,6 @@ class ThreadedActivity {
   void set_state_sleeping(NetworkInterface *iface, char *script_name);
   void set_state_queued(NetworkInterface *iface, char *script_name);
   void set_state_running(NetworkInterface *iface, char *script_name);
-  bool isQueueable(NetworkInterface *iface, char *script_path);
   bool isDeadlineApproaching(time_t deadline);
   u_int32_t getPeriodicity();
   u_int32_t getMaxDuration();

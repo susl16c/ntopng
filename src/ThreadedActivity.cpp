@@ -191,28 +191,6 @@ void ThreadedActivity::set_state_running(NetworkInterface *iface, char *script_n
 
 /* ******************************************* */
 
-bool ThreadedActivity::isQueueable(NetworkInterface *iface, char *script_path) {
-  ThreadedActivityState cur_state = getThreadedActivityState(iface, script_path);
-
-  switch(cur_state) {
-  case threaded_activity_state_sleeping:
-  case threaded_activity_state_unknown:
-    return(true);
-    break;
-    
-  default:
-#ifdef THREAD_DEBUG
-    ntop->getTrace()->traceEvent(TRACE_NORMAL, "ThreadedActivity::isQueueable(%s)", Utils::get_state_label(cur_state));
-#endif       
-    return(false);
-    break;
-  }
-
-  return(false); /* NOTREACHED */
-}
-
-/* ******************************************* */
-
 bool ThreadedActivity::isDeadlineApproaching(time_t deadline) {
   if(terminating)
     return true;
