@@ -63,7 +63,9 @@ for i=1,num_runs do
 				      end
    end, true --[[ update direction stats ]])
 
-   ntop.msleep(1000)
+   if(num_runs > 1) then
+      ntop.msleep(1000)
+   end
 end
 
 -- Uncomment this to simulate slow downs
