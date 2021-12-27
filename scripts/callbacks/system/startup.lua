@@ -189,4 +189,11 @@ if(ntop.exists(local_startup_file)) then
    dofile(local_startup_file)
 end
 
+if(ntop.isPro()) then
+   -- Import ClickHouse dumps if any
+   local silence_import_warnings = true
+
+   ntop.importClickHouseDumps(silence_import_warnings)
+end
+
 traceError(TRACE_NORMAL, TRACE_CONSOLE, "Completed startup.lua")

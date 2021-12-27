@@ -901,6 +901,7 @@ static int ntop_msleep(lua_State* vm) {
     ts.tv_sec = 0;
 
   ts.tv_nsec = ms_duration * 1000;
+
   if(nanosleep(&ts, NULL) != 0)
     ntop->getTrace()->traceEvent(TRACE_WARNING, "nanosleep error: %s", strerror(errno));
 
@@ -1640,6 +1641,25 @@ static int ntop_speedtest(lua_State* vm) {
 
 static int ntop_clickhouse_enabled(lua_State* vm) {
   lua_pushboolean(vm, ntop->getPrefs()->useClickHouse());
+
+  return(ntop_lua_return_value(vm, __FUNCTION__, CONST_LUA_OK));
+}
+
+/* ****************************************** */
+
+static int ntop_clickhouse_import_dumps(lua_State* vm) {
+#if defined(HAVE_CLICKHOUSE) && defined(HAVE_MYSQL)
+  bool silence_warnings;
+  
+  if(ntop_lua_check(vm, __FUNCTION__, 1, LUA_TBOOLEAN) != CONST_LUA_OK)
+    return(ntop_lua_return_value(vm, __FUNCTION__, CONST_LUA_ERROR));
+  else
+    silence_warnings = (bool)lua_toboolean(vm, 1);
+
+  lua_pushinteger(vm, ntop->importClickHouseDumps(silence_warnings));
+#else
+  lua_pushinteger(vm, 0);
+#endif
 
   return(ntop_lua_return_value(vm, __FUNCTION__, CONST_LUA_OK));
 }
@@ -6593,7 +6613,8 @@ static luaL_Reg _ntop_reg[] = {
 
   /* ClickHouse */
   { "isClickHouseEnabled",       ntop_clickhouse_enabled             },
-
+  { "importClickHouseDumps",     ntop_clickhouse_import_dumps        },
+  
   /* Data Binning */
   { "addBin",                    ntop_add_bin                        },
   { "findSimilarities",          ntop_find_bin_similarities          },

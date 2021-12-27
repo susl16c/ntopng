@@ -426,8 +426,15 @@ void ThreadedActivity::periodicActivityBody() {
 #ifdef THREAD_DEBUG
     ntop->getTrace()->traceEvent(TRACE_NORMAL, "Next schedule: %d [%s]", tdiff, activityPath());
 #endif
-    
-    sleep(tdiff);
+
+    while(tdiff > 0) {
+      sleep(1);
+      tdiff--;
+
+      /* Do not wait forever during shutdown */
+      if(isTerminating())
+	break;
+    }
   }
 
   /* ntop->getTrace()->traceEvent(TRACE_NORMAL, "Terminating %s(%s) exit", __FUNCTION__, path); */

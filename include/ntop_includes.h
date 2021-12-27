@@ -368,6 +368,7 @@ using namespace std;
 #include "NIndexFlowDB.h"
 #endif
 #if defined(NTOPNG_PRO) && defined(HAVE_CLICKHOUSE)
+#include "ClickHouseImport.h"
 #include "ClickHouseFlowDB.h"
 #include "ClickHouseAlertStore.h"
 #endif

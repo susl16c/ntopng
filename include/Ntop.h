@@ -112,6 +112,10 @@ class Ntop {
   bool alertExclusionsReloadInProgress;
   AlertExclusions *alert_exclusions, *alert_exclusions_shadow;
 #endif
+#if defined(HAVE_CLICKHOUSE) && defined(HAVE_MYSQL)
+  ClickHouseImport clickhouseImport;
+#endif
+  
   bool assignUserId(u_int8_t *new_user_id);
 
 #ifndef WIN32
@@ -598,6 +602,10 @@ class Ntop {
   void setnDPICleanupNeeded(bool needed);
   u_int16_t getnDPIProtoByName(const char *name);
   bool isDbCreated();
+#if defined(HAVE_CLICKHOUSE) && defined(HAVE_MYSQL)
+  inline u_int importClickHouseDumps(bool silence_warnings) { return(clickhouseImport.importDumps(silence_warnings)); }
+#endif
+
 };
 
 extern Ntop *ntop;
