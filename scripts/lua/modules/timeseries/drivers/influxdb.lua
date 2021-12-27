@@ -515,7 +515,7 @@ local function influx2Series(schema, tstart, tend, tags, options, data, time_ste
     end
 
     --traceError(TRACE_NORMAL, TRACE_CONSOLE, string.format("@ %u = %.2f", cur_t, values[2]))
-    if(false) then -- consinstency check
+    if(false) then -- consistency check
       local expected_t = next_t
       local actual_t = values[1]
 
@@ -913,6 +913,7 @@ function driver:_exportTsFile(exportable)
 
   -- Delete the file after POST
   local delete_file_after_post = false
+  -- Send data to InfluxDB
   local ret = ntop.postHTTPTextFile(self.username, self.password, self.url .. "/write?precision=s&db=" .. self.db, fname, delete_file_after_post, 30 --[[ timeout ]])
 
   if((ret == nil) or ((ret.RESPONSE_CODE ~= 200) and (ret.RESPONSE_CODE ~= 204))) then

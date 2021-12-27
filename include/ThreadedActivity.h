@@ -48,7 +48,8 @@ class ThreadedActivity {
   LuaEngine* loadVm(char *script_path, NetworkInterface *iface, time_t when);
   void set_state(NetworkInterface *iface, char *script_name, ThreadedActivityState ta_state);
   static const char* get_state_label(ThreadedActivityState ta_state);
-
+  bool isValidScript(char* dir, char *path);
+  
  public:
   ThreadedActivity(const char* _path,		   
 		   u_int32_t _periodicity_seconds = 0,

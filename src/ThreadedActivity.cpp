@@ -435,6 +435,24 @@ void ThreadedActivity::periodicActivityBody() {
 
 /* ******************************************* */
 
+bool ThreadedActivity::isValidScript(char* dir, char *path) {
+  u_int len;
+  char *suffix;
+  
+  /* Discard names starting with . */
+  if(path[0] == '.') return(false);
+
+  /* Discard files non ending with .lua suffix */
+  len = strlen(path);
+  if(len <= 4) return(false); else suffix = &path[len-4];
+  
+  // ntop->getTrace()->traceEvent(TRACE_NORMAL, "%s / %s [%s]", dir, path, suffix);
+
+  return(strcmp(suffix, ".lua") == 0 ? true : false);
+}
+
+/* ******************************************* */
+
 /* This function enqueues the periodic activity job into the ThreadPool.
  * The ThreadPool, running into another thread, will dequeue the job and call
  * ThreadedActivity::runScript. The variables interfaceTasksRunning
@@ -467,25 +485,25 @@ void ThreadedActivity::schedulePeriodicActivity(ThreadPool *pool, time_t schedul
     /* Open the directory and run all the scripts inside it */
     if((dir_struct = opendir(dir_path)) != NULL) {
       while((ent = readdir(dir_struct)) != NULL) {
-        if(ent->d_name[0] != '.') { 
+	if(isValidScript(dir_path, ent->d_name)) {
           char script_path[MAX_PATH];
-	  
-	  /* Schedule interface script, one for each interface */
-          snprintf(script_path, sizeof(script_path), "%s%s", dir_path, ent->d_name);
 
+	  /* Schedule interface script, one for each interface */
+	  snprintf(script_path, sizeof(script_path), "%s%s", dir_path, ent->d_name);
+	    
 #ifdef THREAD_DEBUG
 	  ntop->getTrace()->traceEvent(TRACE_NORMAL, "Processing %s", script_path);
 #endif
-
-          if(pool->queueJob(this, script_path, ntop->getSystemInterface(), scheduled_time, deadline)) {
+	    
+	  if(pool->queueJob(this, script_path, ntop->getSystemInterface(), scheduled_time, deadline)) {
 #ifdef THREAD_DEBUG
 	    ntop->getTrace()->traceEvent(TRACE_NORMAL, "Queued system job %s", script_path);
 #endif
-          }
-        }
+	  }
+	}      
       }
 
-      closedir (dir_struct);
+      closedir(dir_struct);
     }
   }
 
@@ -509,7 +527,7 @@ void ThreadedActivity::schedulePeriodicActivity(ThreadPool *pool, time_t schedul
     /* Open the directory e run all the scripts inside it */
     if((dir_struct = opendir(dir_path)) != NULL) {
       while((ent = readdir(dir_struct)) != NULL) {
-        if(ent->d_name[0] != '.') { /* Excluding . and .. directories */
+	if(isValidScript(dir_path, ent->d_name)) {
           for(int i = 0; i < ntop->get_num_interfaces(); i++) {
             NetworkInterface *iface = ntop->getInterface(i);
             
@@ -530,7 +548,7 @@ void ThreadedActivity::schedulePeriodicActivity(ThreadPool *pool, time_t schedul
         }
       }
       
-      closedir (dir_struct);
+      closedir(dir_struct);
     }
   }
 }
