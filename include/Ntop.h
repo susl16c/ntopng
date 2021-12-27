@@ -415,8 +415,6 @@ class Ntop {
   char* getIfName(int if_id, char *name, u_int name_len);
 #endif
 #endif
-  void checkSystemScripts(ScriptPeriodicity p, lua_State *vm);
-  void checkSNMPDeviceAlerts(ScriptPeriodicity p, lua_State *vm);
   void lua_periodic_activities_stats(NetworkInterface *iface, lua_State* vm);
   void getUsers(lua_State* vm);
   bool getLocalNetworkAlias(lua_State *vm, u_int8_t network_id);

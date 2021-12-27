@@ -14,14 +14,15 @@ local checks = require "checks"
 
 local checks_var = {
    ifid = nil,
+   system_ts_enabled = nil,
+   system_config = nil,
    available_modules = nil,
-   iface_config = nil, 
    configset = nil,
    do_benchmark = false,
    do_print_benchmark = false
 }
 
-local granularity = "min"
+local granularity = "day"
 local do_trace = false
 
 -- #################################################################

@@ -2042,6 +2042,85 @@ function checks.printUserScripts()
 
 end
 
+-- #################################################################
+
+local function snmp_device_run_checks(cached_device, checks_var)
+   local snmp_consts = require "snmp_consts"
+
+   local granularity = checks_var.cur_granularity
+   local device_ip  = cached_device["host_ip"]
+   local snmp_device_entity = alerts_api.snmpDeviceEntity(device_ip)
+   local all_modules = checks_var.available_modules.modules
+   local now = os.time()
+   now = now - now % 300
+
+   local info = {
+      granularity = granularity,
+      alert_entity = snmp_device_entity,
+      check = check,
+      cached_device = cached_device,
+      now = now,
+   }
+
+   -- Retrieve the configuration
+   local device_conf = checks.getConfig(checks_var.configset, "snmp_device")
+
+   -- Run callback for each device
+   for mod_key, hook_fn in pairs(checks_var.available_modules.hooks["snmpDevice"] or {}) do
+      local script = all_modules[mod_key]
+      local conf = checks.getTargetHookConfig(device_conf, script)
+
+      if(conf.enabled) then
+        alerts_api.invokeScriptHook(script, checks_var.configset, hook_fn, device_ip, info, conf)
+      end
+   end
+
+   -- Run callback for each interface
+   for mod_key, hook_fn in pairs(checks_var.available_modules.hooks["snmpDeviceInterface"] or {}) do
+      local script = all_modules[mod_key]
+      local conf = checks.getTargetHookConfig(device_conf, script)
+
+      -- For each interface of the current device...
+      for snmp_interface_index, snmp_interface in pairs(cached_device.interfaces) do
+	 local if_type = snmp_consts.snmp_iftype(snmp_interface.type)
+
+	 if(script.skip_virtual_interfaces and
+	       ((if_type == "propVirtual") or (if_type == "softwareLoopback"))) then
+	    goto continue
+	 end
+
+	 if(conf.enabled) then
+	    local iface_entity = alerts_api.snmpInterfaceEntity(device_ip, snmp_interface_index)
+
+	    -- Augment data with counters and status
+	    snmp_interface["if_counters"] = cached_device.if_counters[snmp_interface_index]
+	    snmp_interface["bridge"] = cached_device.bridge[snmp_interface_index]
+
+	    alerts_api.invokeScriptHook(script, checks_var.configset, hook_fn, device_ip, snmp_interface_index, table.merge(snmp_interface, {
+	       granularity = granularity,
+	       alert_entity = iface_entity,
+	       check = script,
+	       check_config = conf.script_conf,
+	       now = now,
+	    }))
+	 end
+
+	 ::continue::
+      end
+   end
+
+   return true
+end
+
+-- #################################################################
+
+-- The function below is called at shutdown
+local function teardownChecks(str_granularity, checks_var, do_trace)
+   if(do_trace) then print("alert.lua:teardown("..str_granularity..") called\n") end
+
+   checks.teardown(checks_var.available_modules, checks_var.do_benchmark, checks_var.do_print_benchmark)
+end
+
 -- ##############################################
 
 -- The function below ia called once at the startup
@@ -2062,11 +2141,66 @@ end
 
 -- #################################################################
 
--- The function below is called at shutdown
-local function teardownChecks(str_granularity, checks_var, do_trace)
-   if(do_trace) then print("alert.lua:teardown("..str_granularity..") called\n") end
 
-   checks.teardown(checks_var.available_modules, checks_var.do_benchmark, checks_var.do_print_benchmark)
+-- The function below ia called once (#pragma once)
+local function setupLocalNetworkChecks(str_granularity, checks_var, do_trace)
+   checks_var.network_entity = alert_consts.alert_entities.network.entity_id
+   if do_trace then print("alert.lua:setup("..str_granularity..") called\n") end
+   checks_var.ifid = interface.getId()
+
+   -- Load the threshold checking functions
+   checks_var.available_modules = checks.load(ifid, checks.script_types.traffic_element, "network", {
+      hook_filter = str_granularity,
+      do_benchmark = checks_var.do_benchmark,
+   })
+
+   checks_var.configset = checks.getConfigset()
+   -- Instance of local network pools to get assigned members
+   checks_var.pools_instance = local_network_pools:create()
+end
+
+-- #################################################################
+
+-- The function below ia called once (#pragma once)
+local function setupSystemChecks(str_granularity, checks_var, do_trace)
+   if do_trace then print("system.lua:setup("..str_granularity..") called\n") end
+
+   interface.select(getSystemInterfaceId())
+   checks_var.ifid = interface.getId()
+   
+   checks_var.system_ts_enabled = areSystemTimeseriesEnabled()
+
+   -- Load the threshold checking functions
+   checks_var.available_modules = checks.load(ifid, checks.script_types.system, "system", {
+      hook_filter = str_granularity,
+      do_benchmark = checks_var.do_benchmark,
+   })
+
+   checks_var.configset = checks.getConfigset()
+   checks_var.system_config = checks.getConfig(checks_var.configset, "system")
+end
+
+-- #################################################################
+
+-- The function below ia called once (#pragma once)
+local function setupSNMPChecks(str_granularity, checks_var, do_trace)
+   local snmp_device_pools = require "snmp_device_pools"
+   
+   if do_trace then print("alert.lua:setup("..str_granularity..") called\n") end
+   
+   checks_var.snmp_device_entity = alert_consts.alert_entities.snmp_device.entity_id
+
+   interface.select(getSystemInterfaceId())
+   checks_var.ifid = interface.getId()
+
+   -- Load the threshold checking functions
+   checks_var.available_modules = checks.load(ifid, checks.script_types.snmp_device, "snmp_device", {
+      do_benchmark = checks_var.do_benchmark,
+   })
+
+   checks_var.configset = checks.getConfigset()
+   -- Instance of snmp device pools to get assigned members
+   checks_var.pools_instance = snmp_device_pools:create()
 end
 
 -- #################################################################
@@ -2108,38 +2242,6 @@ local function runInterfaceChecks(granularity, checks_var, do_trace)
   if #cur_alerts > 0 then
      alerts_api.releaseEntityAlerts(entity_info, cur_alerts)
   end
-end
-
--- #################################################################
-
--- This function is called by NetworkInterface.cpp:9234
--- and it is called when clicking the release button
--- it's not a periodic script
-function checks.releaseInterfaceChecks(granularity)
-  local ifid = interface.getId()
-  local entity_info = alerts_api.interfaceAlertEntity(ifid)
-
-  alerts_api.releaseEntityAlerts(entity_info, interface.getAlerts(granularity))
-end
-
--- #################################################################
-
-
--- The function below ia called once (#pragma once)
-local function setupLocalNetworkChecks(str_granularity, checks_var, do_trace)
-   checks_var.network_entity = alert_consts.alert_entities.network.entity_id
-   if do_trace then print("alert.lua:setup("..str_granularity..") called\n") end
-   checks_var.ifid = interface.getId()
-
-   -- Load the threshold checking functions
-   checks_var.available_modules = checks.load(ifid, checks.script_types.traffic_element, "network", {
-      hook_filter = str_granularity,
-      do_benchmark = checks_var.do_benchmark,
-   })
-
-   checks_var.configset = checks.getConfigset()
-   -- Instance of local network pools to get assigned members
-   checks_var.pools_instance = local_network_pools:create()
 end
 
 -- #################################################################
@@ -2189,6 +2291,80 @@ end
 
 -- #################################################################
 
+local function runSystemChecks(granularity, checks_var, do_trace)
+   if do_trace then print("system.lua:runScripts("..granularity..") called\n") end
+   
+  if table.empty(checks_var.available_modules.hooks[granularity]) then
+    if(do_trace) then print("system:runScripts("..granularity.."): no modules, skipping\n") end
+    return
+  end
+
+  -- NOTE: currently no deadline check is explicitly performed here.
+  -- The "process:resident_memory" must always be written as it has the
+  -- is_critical_ts flag set.
+
+  local when = os.time()
+  
+  for mod_key, hook_fn in pairs(checks_var.available_modules.hooks[granularity]) do
+    local check = checks_var.available_modules.modules[mod_key]
+    local conf = checks.getTargetHookConfig(checks_var.system_config, check, granularity)
+
+    if(conf.enabled) then
+       alerts_api.invokeScriptHook(
+	  check, checks_var.configset, hook_fn,
+	  {
+	     granularity = granularity,
+	     alert_entity = alerts_api.interfaceAlertEntity(getSystemInterfaceId()),
+	     check_config = conf.script_conf,
+	     check = check,
+	     when = when,
+	     ts_enabled = checks_var.system_ts_enabled,
+       })
+    end
+  end
+end
+
+-- #################################################################
+
+-- The function below is called once
+local function runSNMPChecks(granularity, checks_var, do_trace)
+   local snmp_config = require "snmp_config"
+   local snmp_cached_dev = require "snmp_cached_dev"
+
+   checks_var.cur_granularity = granularity
+
+   if(table.empty(checks_var.available_modules.hooks)) then
+      -- Nothing to do
+      return
+   end
+
+   -- NOTE: don't use foreachSNMPDevice, we want to get all the SNMP
+   -- devices, not only the active ones, without changing the device state
+   local snmpdevs = snmp_config.get_all_configured_devices()
+
+   for device_ip, device in pairs(snmpdevs) do
+      local cached_device = snmp_cached_dev:create(device_ip)
+
+      if cached_device then
+	      snmp_device_run_checks(cached_device, checks_var)
+      end
+   end
+end
+
+-- #################################################################
+
+-- This function is called by NetworkInterface.cpp:9234
+-- and it is called when clicking the release button
+-- it's not a periodic script
+function checks.releaseInterfaceChecks(granularity)
+  local ifid = interface.getId()
+  local entity_info = alerts_api.interfaceAlertEntity(ifid)
+
+  alerts_api.releaseEntityAlerts(entity_info, interface.getAlerts(granularity))
+end
+
+-- #################################################################
+
 function checks.releaseLocalNetworkChecks(granularity)
   local info = network.getNetworkStats()
   local network_key = info and info.network_key
@@ -2216,6 +2392,22 @@ end
 function checks.localNetworkChecks(granularity, checks_var, do_trace)
    setupLocalNetworkChecks(granularity, checks_var, do_trace)
    runLocalNetworkChecks(granularity, checks_var, do_trace)
+   teardownChecks(granularity, checks_var, do_trace)
+end
+
+-- #################################################################
+
+function checks.systemChecks(granularity, checks_var, do_trace)
+   setupSystemChecks(granularity, checks_var, do_trace)
+   runSystemChecks(granularity, checks_var, do_trace)
+   teardownChecks(granularity, checks_var, do_trace)
+end
+
+-- #################################################################
+
+function checks.SNMPChecks(granularity, checks_var, do_trace)
+   setupSNMPChecks(granularity, checks_var, do_trace)
+   runSNMPChecks(granularity, checks_var, do_trace)
    teardownChecks(granularity, checks_var, do_trace)
 end
 

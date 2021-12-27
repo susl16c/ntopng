@@ -14,16 +14,21 @@ local checks = require "checks"
 
 local checks_var = {
    ifid = nil,
+   cur_granularity = nil,
+   system_ts_enabled = nil,
+   system_config = nil,
+   snmp_device_entity = nil,
+   pools_instance = nil,
+   config_alerts = nil,
    available_modules = nil,
-   iface_config = nil, 
    configset = nil,
    do_benchmark = false,
    do_print_benchmark = false
 }
 
-local granularity = "min"
+local granularity = "5min"
 local do_trace = false
 
 -- #################################################################
 
-checks.interfaceChecks(granularity, checks_var, do_trace)
+checks.SNMPChecks(granularity, checks_var, do_trace)

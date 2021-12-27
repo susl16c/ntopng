@@ -41,7 +41,4 @@ if ntop.isPro() then
 
    drop_host_pool_utils.check_periodic_hosts_list()
    drop_host_pool_utils.check_pre_banned_hosts_to_add()
-end   
-
--- Run minute scripts
-ntop.checkSystemScriptsMin()
+end

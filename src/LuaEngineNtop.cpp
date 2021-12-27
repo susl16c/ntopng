@@ -1480,31 +1480,6 @@ static int ntop_has_plugins_reloaded(lua_State* vm) {
 
 /* ****************************************** */
 
-static int ntop_check_system_scripts(lua_State* vm, ScriptPeriodicity p) {
-  ntop->checkSystemScripts(p, vm);
-
-  lua_pushnil(vm);
-  return(ntop_lua_return_value(vm, __FUNCTION__, CONST_LUA_OK));
-}
-
-static int ntop_check_system_scripts_min(lua_State* vm)   { return(ntop_check_system_scripts(vm, minute_script)); }
-static int ntop_check_system_scripts_5min(lua_State* vm)  { return(ntop_check_system_scripts(vm, five_minute_script)); }
-static int ntop_check_system_scripts_hour(lua_State* vm)  { return(ntop_check_system_scripts(vm, hour_script)); }
-static int ntop_check_system_scripts_day(lua_State* vm)   { return(ntop_check_system_scripts(vm, day_script)); }
-
-/* ****************************************** */
-
-static int ntop_check_snmp_device_alerts(lua_State* vm, ScriptPeriodicity p) {
-  ntop->checkSNMPDeviceAlerts(p, vm);
-
-  lua_pushnil(vm);
-  return(ntop_lua_return_value(vm, __FUNCTION__, CONST_LUA_OK));
-}
-
-static int ntop_check_snmp_device_alerts_5min(lua_State* vm)  { return(ntop_check_snmp_device_alerts(vm, five_minute_script)); }
-
-/* ****************************************** */
-
 static int ntop_set_default_file_permissions(lua_State* vm) {
   char *fpath;
 
@@ -6607,13 +6582,6 @@ static luaL_Reg _ntop_reg[] = {
 
   /* nEdge and Appliance */
   { "shutdown",              ntop_shutdown                 },
-
-  /* System User Scripts */
-  { "checkSystemScriptsMin",     ntop_check_system_scripts_min       },
-  { "checkSystemScripts5Min",    ntop_check_system_scripts_5min      },
-  { "checkSystemScriptsHour",    ntop_check_system_scripts_hour      },
-  { "checkSystemScriptsDay",     ntop_check_system_scripts_day       },
-  { "checkSNMPDeviceAlerts5Min", ntop_check_snmp_device_alerts_5min  },
 
   /* Periodic scripts (ThreadedActivity.cpp) */
   { "isDeadlineApproaching",     ntop_script_is_deadline_approaching },
