@@ -11,7 +11,7 @@ require "lua_utils"
 local callback_utils = require "callback_utils"
 
 -- Run this script for a minute before quitting (this reduces load on Lua VM infrastructure)
-local num_runs = 60
+local num_runs = 1
 local debug = false
 
 for i=1,num_runs do
@@ -21,6 +21,9 @@ for i=1,num_runs do
    if(debug) then io.write("[influxdb.lua] Uploading...\n") end
    callback_utils.uploadTSdata()
    if(debug) then io.write("[influxdb.lua] Upload completed: sleeping...\n") end
-   ntop.msleep(1000)
-   if(debug) then io.write("[influxdb.lua] Sleep over\n") end
+
+   if(num_runs > 1) then
+      ntop.msleep(1000)
+      if(debug) then io.write("[influxdb.lua] Sleep over\n") end
+   end
 end

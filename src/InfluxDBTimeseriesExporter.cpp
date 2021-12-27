@@ -21,6 +21,8 @@
 
 #include "ntop_includes.h"
 
+// #define TRACE_INFLUXDB_EXPORTS
+
 /* ******************************************************* */
 
 /*
@@ -38,11 +40,12 @@
   $ chronograf
 */
 InfluxDBTimeseriesExporter::InfluxDBTimeseriesExporter(NetworkInterface *_if) : TimeseriesExporter(_if) {
-  num_cached_entries = 0, dbCreated = false;
+  num_cached_entries = 0;
   cursize = num_exports = 0;
   fp = NULL;
 
-  snprintf(fbase, sizeof(fbase), "%s/%d/ts_export/", ntop->get_working_dir(), iface->get_id());
+  /* All interfaces write files into the same directory (as with ClickHouse) */
+  snprintf(fbase, sizeof(fbase), "%s/ts_export/", ntop->get_working_dir());
   ntop->fixPath(fbase);
 
   if(!Utils::mkdir_tree(fbase)) {
@@ -65,7 +68,8 @@ void InfluxDBTimeseriesExporter::createDump() {
   cursize = 0;
 
   /* Use the flushTime as the fname */
-  snprintf(fname, sizeof(fname), "%s%u_%lu%s", fbase, num_exports, flushTime, TMP_TRAILER);
+  snprintf(fname, sizeof(fname), "%s%u_%u_%lu%s", fbase, (u_int16_t)iface->get_id(),
+	   num_exports, flushTime, TMP_TRAILER);
 
   if(!(fp = fopen(fname, "wb")))
     ntop->getTrace()->traceEvent(TRACE_ERROR, "[%s] Unable to dump TS data onto %s: %s",
@@ -77,12 +81,9 @@ void InfluxDBTimeseriesExporter::createDump() {
     ntop->getTrace()->traceEvent(TRACE_INFO, "[%s] Dumping TS data onto %s",
 				 iface->get_name(), fname);
   }
-  
-  num_cached_entries = 0;
 
-  if(!dbCreated) {
-    dbCreated = true;
-  }
+  cursize = 0;
+  num_cached_entries = 0;
 }
 
 /* ******************************************************* */
@@ -138,7 +139,8 @@ void InfluxDBTimeseriesExporter::flush() {
   
     fclose(fp);    
     fp = NULL;
-
+    num_exports++;
+    
     /* Remove .tmp trailer */
     snprintf(buf, sizeof(buf), "%s", fname);
     len = strlen(buf) - strlen(TMP_TRAILER);
@@ -149,14 +151,7 @@ void InfluxDBTimeseriesExporter::flush() {
     ntop->getTrace()->traceEvent(TRACE_NORMAL, "[InfluxDB] File %s ready to import", buf);
 #endif
     
-    snprintf(buf, sizeof(buf), "%d|%lu|%u|%u", iface->get_id(), flushTime,
-				   num_exports, num_cached_entries);
-    cursize = 0;
-    num_exports++;
-
-    ntop->getRedis()->rpush(CONST_INFLUXDB_FILE_QUEUE, buf, 0);
-    ntop->getTrace()->traceEvent(TRACE_INFO, "[%s] Queueing TS file %s [%u entries]",
-				 iface->get_name(), fname, num_cached_entries);
+    ntop->getRedis()->incr(CONST_INFLUXDB_KEY_EXPORTED_POINTS, num_cached_entries);
   }
 
   m.unlock(__FILE__, __LINE__);

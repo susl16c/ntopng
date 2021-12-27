@@ -218,7 +218,7 @@ bool ThreadPool::queueJob(ThreadedActivity *ta, char *script_path,
     return(false);
   }
 
-  if(threads.size() > (num_threads-3)) {
+  if((int)threads.size() > (num_threads-3)) {
 #ifdef THREAD_DEBUG
     ntop->getTrace()->traceEvent(TRACE_NORMAL, "Job queue: %u", threads.size());
 #endif
