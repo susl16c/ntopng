@@ -65,15 +65,19 @@ void InfluxDBTimeseriesExporter::createDump() {
   cursize = 0;
 
   /* Use the flushTime as the fname */
-  snprintf(fname, sizeof(fname), "%s%u_%lu", fbase, num_exports, flushTime);
+  snprintf(fname, sizeof(fname), "%s%u_%lu%s", fbase, num_exports, flushTime, TMP_TRAILER);
 
   if(!(fp = fopen(fname, "wb")))
     ntop->getTrace()->traceEvent(TRACE_ERROR, "[%s] Unable to dump TS data onto %s: %s",
 				 iface->get_name(), fname, strerror(errno));
-  else
+  else {
+#ifdef TRACE_INFLUXDB_EXPORTS
+    ntop->getTrace()->traceEvent(TRACE_NORMAL, "[InfluxDB] Dumping timeseries into File %s", fname);
+#endif
     ntop->getTrace()->traceEvent(TRACE_INFO, "[%s] Dumping TS data onto %s",
 				 iface->get_name(), fname);
-
+  }
+  
   num_cached_entries = 0;
 
   if(!dbCreated) {
@@ -129,9 +133,22 @@ void InfluxDBTimeseriesExporter::flush() {
   m.lock(__FILE__, __LINE__);
 
   if(fp) {
-    fclose(fp);
+    char buf[PATH_MAX+32];
+    u_int len;
+  
+    fclose(fp);    
     fp = NULL;
-    char buf[32];
+
+    /* Remove .tmp trailer */
+    snprintf(buf, sizeof(buf), "%s", fname);
+    len = strlen(buf) - strlen(TMP_TRAILER);
+    buf[len] = '\0';
+    rename(fname, buf);
+
+#ifdef TRACE_INFLUXDB_EXPORTS
+    ntop->getTrace()->traceEvent(TRACE_NORMAL, "[InfluxDB] File %s ready to import", buf);
+#endif
+    
     snprintf(buf, sizeof(buf), "%d|%lu|%u|%u", iface->get_id(), flushTime,
 				   num_exports, num_cached_entries);
     cursize = 0;

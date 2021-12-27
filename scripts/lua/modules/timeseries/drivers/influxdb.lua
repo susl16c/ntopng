@@ -1058,6 +1058,7 @@ end
 
 -- ##############################################
 
+-- This is a function called by the periodic script influx.lua
 function driver:export()
    interface.select(getSystemInterfaceId())
 

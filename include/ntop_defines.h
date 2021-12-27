@@ -1210,8 +1210,13 @@ extern struct ntopngLuaContext* getUserdata(struct lua_State *vm);
 #define CLICKHOUSE_PREFIX                "clickhouse"
 
 /* Trailers must have the same lenght */
-#define CLICKHOUSE_TRAILER               ".csv"
-#define CLICKHOUSE_TMP_TRAILER           ".tmp"
-#define CLICKHOUSE_DISCARD_TRAILER       ".dsc" 
+#define CSV_TRAILER                      ".csv"
+#define TMP_TRAILER                      ".tmp"
+#define DISCARD_TRAILER                  ".dsc" 
+
+#define CLICKHOUSE_TRAILER               CSV_TRAILER
+#define CLICKHOUSE_TMP_TRAILER           TMP_TRAILER
+#define CLICKHOUSE_DISCARD_TRAILER       DISCARD_TRAILER
+
 
 #endif /* _NTOP_DEFINES_H_ */
