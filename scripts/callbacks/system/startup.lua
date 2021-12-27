@@ -138,7 +138,6 @@ alert_utils.notify_ntopng_start()
 
 if not recovery_utils.check_clean_shutdown() then
    package.path = dirs.installdir .. "/scripts/callbacks/system/?.lua;" .. package.path
-   require("recovery")
 end
 
 recovery_utils.unmark_clean_shutdown()
