@@ -28,6 +28,9 @@ local http_lint = require("http_lint")
 local ipv4_utils = require "ipv4_utils"
 local pools_lua_utils = require "pools_lua_utils"
 local alert_exclusions = require "alert_exclusions"
+local alerts_api = require("alerts_api")
+
+local local_network_pools = require "local_network_pools"
 
 local info = ntop.getInfo()
 
@@ -921,25 +924,6 @@ function checks.loadModule(ifid, script_type, subdir, mod_fname)
    end
 
    return check
-end
-
--- ##############################################
-
-function checks.runPeriodicScripts()
-   local requested = {}
-   for granularity, _ in pairs(alert_consts.alerts_granularities) do
-      local k = string.format(REQUEST_PERIODIC_USER_SCRIPTS_RUN_KEY, interface.getId(), granularity)
-
-      if ntop.getCache(k) == "1" then
-	 requested[granularity] = true
-	 ntop.delCache(k)
-      end
-   end
-
-   if table.len(requested) > 0 then
-      interface.checkInterfaceAlerts(requested["min"], requested["5mins"], requested["hour"], requested["day"])
-      interface.checkNetworksAlerts(requested["min"], requested["5mins"], requested["hour"], requested["day"])
-   end
 end
 
 -- ##############################################
@@ -2059,5 +2043,182 @@ function checks.printUserScripts()
 end
 
 -- ##############################################
+
+-- The function below ia called once at the startup
+local function setupInterfaceChecks(str_granularity, checks_var, do_trace)
+   if(do_trace) then print("alert.lua:setup("..str_granularity..") called\n") end
+   checks_var.ifid = interface.getId()
+
+   -- Load the check modules
+   checks_var.available_modules = checks.load(ifid, checks.script_types.traffic_element, "interface", {
+      hook_filter = str_granularity,
+      do_benchmark = checks_var.do_benchmark,
+   })
+
+   checks_var.configset = checks.getConfigset()
+   -- Retrieve the configuration associated to the confset
+   checks_var.iface_config = checks.getConfig(checks_var.configset, "interface")
+end
+
+-- #################################################################
+
+-- The function below is called at shutdown
+local function teardownChecks(str_granularity, checks_var, do_trace)
+   if(do_trace) then print("alert.lua:teardown("..str_granularity..") called\n") end
+
+   checks.teardown(checks_var.available_modules, checks_var.do_benchmark, checks_var.do_print_benchmark)
+end
+
+-- #################################################################
+
+-- This function runs interfaces checks
+local function runInterfaceChecks(granularity, checks_var, do_trace)
+   if table.empty(checks_var.available_modules.hooks[granularity]) then
+      if(do_trace) then print("interface:runScripts("..granularity.."): no modules, skipping\n") end
+      return
+   end
+
+   local granularity_id = alert_consts.alerts_granularities[granularity].granularity_id
+
+   local info = interface.getStats()
+   local cur_alerts = interface.getAlerts(granularity_id)
+   local entity_info = alerts_api.interfaceAlertEntity(checks_var.ifid)
+
+   if(do_trace) then print("checkInterfaceAlerts()\n") end
+
+   for mod_key, hook_fn in pairs(checks_var.available_modules.hooks[granularity]) do
+     local check = checks_var.available_modules.modules[mod_key]
+     local conf = checks.getTargetHookConfig(checks_var.iface_config, check, granularity)
+
+     if(conf.enabled) then
+	alerts_api.invokeScriptHook(check, checks_var.configset, hook_fn, {
+				       granularity = granularity,
+				       alert_entity = entity_info,
+				       entity_info = info,
+				       cur_alerts = cur_alerts,
+				       check_config = conf.script_conf,
+				       check = check,
+	})
+      end
+   end
+
+  -- cur_alerts now contains unprocessed triggered alerts, that is,
+  -- those alerts triggered but then disabled or unconfigured (e.g., when
+  -- the user removes a threshold from the gui)
+  if #cur_alerts > 0 then
+     alerts_api.releaseEntityAlerts(entity_info, cur_alerts)
+  end
+end
+
+-- #################################################################
+
+-- This function is called by NetworkInterface.cpp:9234
+-- and it is called when clicking the release button
+-- it's not a periodic script
+function checks.releaseInterfaceChecks(granularity)
+  local ifid = interface.getId()
+  local entity_info = alerts_api.interfaceAlertEntity(ifid)
+
+  alerts_api.releaseEntityAlerts(entity_info, interface.getAlerts(granularity))
+end
+
+-- #################################################################
+
+
+-- The function below ia called once (#pragma once)
+local function setupLocalNetworkChecks(str_granularity, checks_var, do_trace)
+   checks_var.network_entity = alert_consts.alert_entities.network.entity_id
+   if do_trace then print("alert.lua:setup("..str_granularity..") called\n") end
+   checks_var.ifid = interface.getId()
+
+   -- Load the threshold checking functions
+   checks_var.available_modules = checks.load(ifid, checks.script_types.traffic_element, "network", {
+      hook_filter = str_granularity,
+      do_benchmark = checks_var.do_benchmark,
+   })
+
+   checks_var.configset = checks.getConfigset()
+   -- Instance of local network pools to get assigned members
+   checks_var.pools_instance = local_network_pools:create()
+end
+
+-- #################################################################
+
+-- The function below is called once per local network
+local function runLocalNetworkChecks(granularity, checks_var, do_trace)
+   if table.empty(checks_var.available_modules.hooks[granularity]) then
+      if(do_trace) then print("network:runScripts("..granularity.."): no modules, skipping\n") end
+      return
+   end
+
+   local info = network.getNetworkStats()
+   local network_key = info and info.network_key
+   if not network_key then return end
+
+   local granularity_id = alert_consts.alerts_granularities[granularity].granularity_id
+
+   local cur_alerts = network.getAlerts(granularity_id)
+   local entity_info = alerts_api.networkAlertEntity(network_key)
+
+   -- Retrieve the configuration
+   local subnet_conf = checks.getConfig(checks_var.configset, "network")
+
+   for mod_key, hook_fn in pairs(checks_var.available_modules.hooks[granularity]) do
+      local check = checks_var.available_modules.modules[mod_key]
+      local conf = checks.getTargetHookConfig(subnet_conf, check, granularity)
+
+      if(conf.enabled) then
+	 alerts_api.invokeScriptHook(check, checks_var.configset, hook_fn, {
+					granularity = granularity,
+					alert_entity = entity_info,
+					entity_info = info,
+					cur_alerts = cur_alerts,
+					check_config = conf.script_conf,
+					check = check,
+	 })
+      end
+   end
+
+  -- cur_alerts contains unprocessed triggered alerts, that is,
+  -- those alerts triggered but then disabled or unconfigured (e.g., when
+  -- the user removes a threshold from the gui)
+  if #cur_alerts > 0 then
+     alerts_api.releaseEntityAlerts(entity_info, cur_alerts)
+  end
+end
+
+-- #################################################################
+
+function checks.releaseLocalNetworkChecks(granularity)
+  local info = network.getNetworkStats()
+  local network_key = info and info.network_key
+  if not network_key then return end
+
+  local entity_info = alerts_api.networkAlertEntity(network_key)
+
+  alerts_api.releaseEntityAlerts(entity_info, network.getAlerts(granularity))
+end
+
+-- #################################################################
+-- Setup, run and shutdown periodic interface and network checks
+-- #################################################################
+
+-- #################################################################
+
+function checks.interfaceChecks(granularity, checks_var, do_trace)
+   setupInterfaceChecks(granularity, checks_var, do_trace)
+   runInterfaceChecks(granularity, checks_var, do_trace)
+   teardownChecks(granularity, checks_var, do_trace)
+end
+
+-- #################################################################
+
+function checks.localNetworkChecks(granularity, checks_var, do_trace)
+   setupLocalNetworkChecks(granularity, checks_var, do_trace)
+   runLocalNetworkChecks(granularity, checks_var, do_trace)
+   teardownChecks(granularity, checks_var, do_trace)
+end
+
+-- #################################################################
 
 return(checks)

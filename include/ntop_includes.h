@@ -330,7 +330,6 @@ using namespace std;
 #include "LuaEngineFunctions.h"
 #include "LuaEngine.h"
 #include "SPSCQueue.h"
-#include "AlertCheckLuaEngine.h"
 #include "SyslogLuaEngine.h"
 #include "FifoQueue.h"
 #include "StringFifoQueue.h"

@@ -984,23 +984,23 @@ void Ntop::setCustomnDPIProtos(char *path) {
 /* *************************************** */
 
 void Ntop::checkSystemScripts(ScriptPeriodicity p, lua_State *vm) {
-  AlertCheckLuaEngine acle(alert_entity_system, p, NULL, vm);
+  /*AlertCheckLuaEngine acle(alert_entity_system, p, NULL, vm);
   lua_State *L = acle.getState();
 
   lua_getglobal(L, USER_SCRIPTS_RUN_CALLBACK); /* Called function */
-  lua_pushstring(L, acle.getGranularity());              /* push 1st argument */
-  acle.pcall(1 /* num args */, 0);
+  //lua_pushstring(L, acle.getGranularity());              /* push 1st argument */
+  //acle.pcall(1 /* num args */, 0);*/
 }
 
 /* *************************************** */
 
 void Ntop::checkSNMPDeviceAlerts(ScriptPeriodicity p, lua_State *vm) {
-  AlertCheckLuaEngine acle(alert_entity_snmp_device, p, NULL, vm);
+  /*AlertCheckLuaEngine acle(alert_entity_snmp_device, p, NULL, vm);
   lua_State *L = acle.getState();
 
   lua_getglobal(L, USER_SCRIPTS_RUN_CALLBACK); /* Called function */
-  lua_pushstring(L, acle.getGranularity());              /* push 1st argument */
-  acle.pcall(1 /* num args */, 0);
+  //lua_pushstring(L, acle.getGranularity());              /* push 1st argument */
+  //acle.pcall(1 /* num args */, 0);*/
 }
 
 /* ******************************************* */

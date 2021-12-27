@@ -33,10 +33,6 @@ local checks_condition = function(ifId)
    return true
 end
 
-local checks_function = function(ifname, ifstats)
-   checks.runPeriodicScripts()
-end
-
 -- periodic discovery enabled
 local discovery_enabled = (ntop.getPref("ntopng.prefs.is_periodic_network_discovery_enabled") == "1")
 local discovery_interval = ntop.getPref("ntopng.prefs.network_discovery_interval")

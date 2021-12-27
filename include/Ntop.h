@@ -364,7 +364,7 @@ class Ntop {
     snprintf(ifname, sizeof(ifname), "%d", ifid);
     return getNetworkInterface(ifname, vm /* enforce the check on the allowed interface */);
   };
-
+  
   /**
    * @brief Get the current HTTPserver instance.
    *
