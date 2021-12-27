@@ -2166,7 +2166,7 @@ local function setupSystemChecks(str_granularity, checks_var, do_trace)
    if do_trace then print("system.lua:setup("..str_granularity..") called\n") end
 
    interface.select(getSystemInterfaceId())
-   checks_var.ifid = interface.getId()
+   checks_var.ifid = getSystemInterfaceId()
    
    checks_var.system_ts_enabled = areSystemTimeseriesEnabled()
 
@@ -2191,7 +2191,7 @@ local function setupSNMPChecks(str_granularity, checks_var, do_trace)
    checks_var.snmp_device_entity = alert_consts.alert_entities.snmp_device.entity_id
 
    interface.select(getSystemInterfaceId())
-   checks_var.ifid = interface.getId()
+   checks_var.ifid = getSystemInterfaceId()
 
    -- Load the threshold checking functions
    checks_var.available_modules = checks.load(ifid, checks.script_types.snmp_device, "snmp_device", {
@@ -2294,34 +2294,34 @@ end
 local function runSystemChecks(granularity, checks_var, do_trace)
    if do_trace then print("system.lua:runScripts("..granularity..") called\n") end
    
-  if table.empty(checks_var.available_modules.hooks[granularity]) then
-    if(do_trace) then print("system:runScripts("..granularity.."): no modules, skipping\n") end
-    return
-  end
+   if table.empty(checks_var.available_modules.hooks[granularity]) then
+      if(do_trace) then print("system:runScripts("..granularity.."): no modules, skipping\n") end
+      return
+   end
 
-  -- NOTE: currently no deadline check is explicitly performed here.
-  -- The "process:resident_memory" must always be written as it has the
-  -- is_critical_ts flag set.
+   -- NOTE: currently no deadline check is explicitly performed here.
+   -- The "process:resident_memory" must always be written as it has the
+   -- is_critical_ts flag set.
 
-  local when = os.time()
+   local when = os.time()
   
-  for mod_key, hook_fn in pairs(checks_var.available_modules.hooks[granularity]) do
-    local check = checks_var.available_modules.modules[mod_key]
-    local conf = checks.getTargetHookConfig(checks_var.system_config, check, granularity)
-
-    if(conf.enabled) then
-       alerts_api.invokeScriptHook(
-	  check, checks_var.configset, hook_fn,
-	  {
-	     granularity = granularity,
-	     alert_entity = alerts_api.interfaceAlertEntity(getSystemInterfaceId()),
-	     check_config = conf.script_conf,
-	     check = check,
-	     when = when,
-	     ts_enabled = checks_var.system_ts_enabled,
-       })
-    end
-  end
+   for mod_key, hook_fn in pairs(checks_var.available_modules.hooks[granularity]) do
+      local check = checks_var.available_modules.modules[mod_key]
+      local conf = checks.getTargetHookConfig(checks_var.system_config, check, granularity)
+   
+      if(conf.enabled) then
+         alerts_api.invokeScriptHook(
+      check, checks_var.configset, hook_fn,
+      {
+         granularity = granularity,
+         alert_entity = alerts_api.interfaceAlertEntity(getSystemInterfaceId()),
+         check_config = conf.script_conf,
+         check = check,
+         when = when,
+         ts_enabled = checks_var.system_ts_enabled,
+         })
+      end
+   end
 end
 
 -- #################################################################

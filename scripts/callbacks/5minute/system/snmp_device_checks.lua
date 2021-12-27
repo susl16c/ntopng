@@ -8,7 +8,7 @@ package.path = dirs.installdir .. "/scripts/lua/modules/?.lua;" .. package.path
 local checks = require "checks"
 
 -- #################################################################
--- Just like for local_network_checks.lua, here periodic interface 
+-- Just like for local_network_checks.lua, here periodic snmp 
 -- checks are executed with the right granularity
 -- #################################################################
 

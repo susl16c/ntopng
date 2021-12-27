@@ -8,7 +8,7 @@ package.path = dirs.installdir .. "/scripts/lua/modules/?.lua;" .. package.path
 local checks = require "checks"
 
 -- #################################################################
--- Just like for local_network_checks.lua, here periodic interface 
+-- Just like for local_network_checks.lua, here periodic system 
 -- checks are executed with the right granularity
 -- #################################################################
 
@@ -27,4 +27,4 @@ local do_trace = false
 
 -- #################################################################
 
-checks.interfaceChecks(granularity, checks_var, do_trace)
+checks.systemChecks(granularity, checks_var, do_trace)
