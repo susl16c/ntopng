@@ -27,10 +27,7 @@ local lists_utils = require "lists_utils"
 local recovery_utils = require "recovery_utils"
 local delete_data_utils = require "delete_data_utils"
 local ts_utils = require "ts_utils"
-local checks = require("checks")
 local presets_utils = require "presets_utils"
-local prefs = ntop.getPrefs()
-local endpoints = require("endpoints")
 
 -- ##################################################################
 

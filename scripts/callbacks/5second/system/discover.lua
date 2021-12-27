@@ -58,9 +58,6 @@ for i=1,num_runs do
    
    -- discovery requests performed by the user from the GUI
    callback_utils.foreachInterface(ifnames, oneshot_discovery_condition, discovery_function)
-
-   -- also run interface checks in piggybacking
-   callback_utils.foreachInterface(ifnames, checks_condition, checks_function)
    
    ntop.msleep(5000) -- 5 seconds frequency
 end
