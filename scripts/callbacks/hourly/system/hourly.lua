@@ -20,6 +20,3 @@ if ntop.isOffline() then
 end
 
 lists_utils.downloadLists()
-
--- Run hourly scripts
-ntop.checkSystemScriptsHour()

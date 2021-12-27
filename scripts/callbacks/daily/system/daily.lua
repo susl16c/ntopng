@@ -30,6 +30,3 @@ if ntop.isClickHouseEnabled() then
 
    db_utils.clickhouseDeleteOldPartitions(mysql_retention)
 end
-
--- Run hourly scripts
-ntop.checkSystemScriptsDay()
