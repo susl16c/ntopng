@@ -10,13 +10,6 @@ local scripts_triggers = require "scripts_triggers"
 local ts_utils         = require "ts_utils"
 local data_retention_utils = require "data_retention_utils"
 
-local prefs            = ntop.getPrefs() or nil
-
-if(ntop.isPro()) then
-   package.path = dirs.installdir .. "/pro/scripts/callbacks/interface/?.lua;" .. package.path
-   require('daily')
-end
-
 -- ########################################################
 
 local verbose = ntop.verboseTrace()

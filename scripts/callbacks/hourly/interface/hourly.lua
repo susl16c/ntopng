@@ -6,10 +6,6 @@ dirs = ntop.getDirs()
 package.path = dirs.installdir .. "/scripts/lua/modules/?.lua;" .. package.path
 package.path = dirs.installdir .. "/scripts/lua/modules/alert_store/?.lua;" .. package.path
 
-if (ntop.isPro()) then
-  package.path = dirs.installdir .. "/pro/scripts/callbacks/interface/?.lua;" .. package.path
-  require('hourly')
-end
 -- ########################################################
 
 local alert_store_utils = require "alert_store_utils"

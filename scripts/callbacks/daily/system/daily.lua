@@ -11,11 +11,6 @@ local auth_sessions_utils = require "auth_sessions_utils"
 local db_utils = require "db_utils"
 local data_retention_utils = require "data_retention_utils"
 
-if(ntop.isPro()) then
-   package.path = dirs.installdir .. "/pro/scripts/callbacks/system/?.lua;" .. package.path
-   require('daily')
-end
-
 -- ########################################################
 
 -- Delete JSON files older than a 30 days

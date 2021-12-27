@@ -2326,7 +2326,6 @@ end
 
 -- #################################################################
 
--- The function below is called once
 local function runSNMPChecks(granularity, checks_var, do_trace)
    local snmp_config = require "snmp_config"
    local snmp_cached_dev = require "snmp_cached_dev"
