@@ -442,13 +442,19 @@ bool ThreadedActivity::isValidScript(char* dir, char *path) {
   /* Discard names starting with . */
   if(path[0] == '.') return(false);
 
+#ifndef HAVE_NEDGE
+  /* Discard scripts that start with nedge_... that are nEdge-only files */
+  if(strncmp(path, NEDGE_HEADER, 6 /* strlen(NEDGE_HEADER) */) == 0)
+    return(false);
+#endif
+  
   /* Discard files non ending with .lua suffix */
-  len = strlen(path);
+	     len = strlen(path);  
   if(len <= 4) return(false); else suffix = &path[len-4];
   
   // ntop->getTrace()->traceEvent(TRACE_NORMAL, "%s / %s [%s]", dir, path, suffix);
 
-  return(strcmp(suffix, ".lua") == 0 ? true : false);
+  return(strcmp(suffix, LUA_TRAILER) == 0 ? true : false);
 }
 
 /* ******************************************* */

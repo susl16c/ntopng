@@ -1212,7 +1212,9 @@ extern struct ntopngLuaContext* getUserdata(struct lua_State *vm);
 /* Trailers must have the same lenght */
 #define CSV_TRAILER                      ".csv"
 #define TMP_TRAILER                      ".tmp"
-#define DISCARD_TRAILER                  ".dsc" 
+#define LUA_TRAILER                      ".lua"
+#define DISCARD_TRAILER                  ".dsc"
+#define NEDGE_HEADER                     "nedge_" 
 
 #define CLICKHOUSE_TRAILER               CSV_TRAILER
 #define CLICKHOUSE_TMP_TRAILER           TMP_TRAILER
