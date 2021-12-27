@@ -32,8 +32,6 @@ local local_networks = interface.getNetworksStats()
 
 for _, net_stats in ipairs(local_networks) do
    network.select(net_stats.network_id)
-
-   tprint(network.getNetworkStats())
    
    checks.localNetworkChecks(granularity, checks_var, do_trace) 
 end
