@@ -478,92 +478,100 @@ void ThreadedActivity::schedulePeriodicActivity(ThreadPool *pool, time_t schedul
   DIR *dir_struct;
   struct dirent *ent;
 
-  /* Schedule system script */
-  snprintf(dir_path, sizeof(dir_path), "%s/%s/system/",
-	   ntop->get_callbacks_dir(), activityPath());
-
+  for(u_int i=0; i<2; i++) {
+    if(i == 0) {
+/* Schedule system script */
+      snprintf(dir_path, sizeof(dir_path), "%s/%s/system/",
+	       ntop->get_callbacks_dir(), activityPath());
+    } else {
 #ifdef NTOPNG_PRO
-  if(stat(dir_path, &buf)) {
-    /* Attempt to locate and execute the callback under the pro callbacks */
-    snprintf(dir_path, sizeof(dir_path), "%s/%s/system/",
-	     ntop->get_pro_callbacks_dir(), activityPath());
-  }
+      /* Attempt to locate and execute the callback under the pro callbacks */
+      snprintf(dir_path, sizeof(dir_path), "%s/%s/system/",
+	       ntop->get_pro_callbacks_dir(), activityPath());    
+#else
+      break;
 #endif
-
-  if(stat(dir_path, &buf) == 0) {
-#ifdef THREAD_DEBUG
-    ntop->getTrace()->traceEvent(TRACE_NORMAL, "Running scripts in %s", dir_path);
-#endif
-    
-    /* Open the directory and run all the scripts inside it */
-    if((dir_struct = opendir(dir_path)) != NULL) {
-      while((ent = readdir(dir_struct)) != NULL) {
-	if(isValidScript(dir_path, ent->d_name)) {
-          char script_path[MAX_PATH];
-
-	  /* Schedule interface script, one for each interface */
-	  snprintf(script_path, sizeof(script_path), "%s%s", dir_path, ent->d_name);
-	    
-#ifdef THREAD_DEBUG
-	  ntop->getTrace()->traceEvent(TRACE_NORMAL, "Processing %s", script_path);
-#endif
-	    
-	  if(pool->queueJob(this, script_path, ntop->getSystemInterface(), scheduled_time, deadline)) {
-#ifdef THREAD_DEBUG
-	    ntop->getTrace()->traceEvent(TRACE_NORMAL, "Queued system job %s", script_path);
-#endif
-	  }
-	}      
-      }
-
-      closedir(dir_struct);
     }
-  }
-
-  /* Schedule interface script, one for each interface */
-  snprintf(dir_path, sizeof(dir_path), "%s/%s/interface/",
-	   ntop->get_callbacks_dir(), activityPath());
-
-#ifdef NTOPNG_PRO
-  if(stat(dir_path, &buf)) {
-    /* Attempt at locating and executing the callback under the pro callbacks */
-    snprintf(dir_path, sizeof(dir_path), "%s/%s/interface/",
-	     ntop->get_pro_callbacks_dir(), activityPath());
-  }
-#endif
-
-  if(stat(dir_path, &buf) == 0) {
+    
+    if(stat(dir_path, &buf) == 0) {
 #ifdef THREAD_DEBUG
-    ntop->getTrace()->traceEvent(TRACE_NORMAL, "Running scripts in %s", dir_path);
+      ntop->getTrace()->traceEvent(TRACE_NORMAL, "Running scripts in %s", dir_path);
 #endif
     
-    /* Open the directory e run all the scripts inside it */
-    if((dir_struct = opendir(dir_path)) != NULL) {
-      while((ent = readdir(dir_struct)) != NULL) {
-	if(isValidScript(dir_path, ent->d_name)) {
-          for(int i = 0; i < ntop->get_num_interfaces(); i++) {
-            NetworkInterface *iface = ntop->getInterface(i);
+      /* Open the directory and run all the scripts inside it */
+      if((dir_struct = opendir(dir_path)) != NULL) {
+	while((ent = readdir(dir_struct)) != NULL) {
+	  if(isValidScript(dir_path, ent->d_name)) {
+	    char script_path[MAX_PATH];
+
+	    /* Schedule interface script, one for each interface */
+	    snprintf(script_path, sizeof(script_path), "%s%s", dir_path, ent->d_name);
+	    
+#ifdef THREAD_DEBUG
+	    ntop->getTrace()->traceEvent(TRACE_NORMAL, "Processing %s", script_path);
+#endif
+	    
+	    if(pool->queueJob(this, script_path, ntop->getSystemInterface(), scheduled_time, deadline)) {
+#ifdef THREAD_DEBUG
+	      ntop->getTrace()->traceEvent(TRACE_NORMAL, "Queued system job %s", script_path);
+#endif
+	    }
+	  }      
+	}
+
+	closedir(dir_struct);
+      }
+    }
+  } /* for */
+
+  for(u_int i=0; i<2; i++) {
+    if(i == 0) {
+      /* Schedule interface script, one for each interface */
+      snprintf(dir_path, sizeof(dir_path), "%s/%s/interface/",
+	       ntop->get_callbacks_dir(), activityPath());
+    } else {
+#ifdef NTOPNG_PRO
+      /* Attempt at locating and executing the callback under the pro callbacks */
+      snprintf(dir_path, sizeof(dir_path), "%s/%s/interface/",
+	       ntop->get_pro_callbacks_dir(), activityPath());
+#else
+      break;
+#endif
+    }
+    
+    if(stat(dir_path, &buf) == 0) {
+#ifdef THREAD_DEBUG
+      ntop->getTrace()->traceEvent(TRACE_NORMAL, "Running scripts in %s", dir_path);
+#endif
+    
+      /* Open the directory e run all the scripts inside it */
+      if((dir_struct = opendir(dir_path)) != NULL) {
+	while((ent = readdir(dir_struct)) != NULL) {
+	  if(isValidScript(dir_path, ent->d_name)) {
+	    for(int i = 0; i < ntop->get_num_interfaces(); i++) {
+	      NetworkInterface *iface = ntop->getInterface(i);
             
-            /* Running the script for each interface if it's not a PCAP */
-            if(iface &&	(iface->getIfType() != interface_type_PCAP_DUMP || !excludePcap())) {      
-              char script_path[MAX_PATH];
+	      /* Running the script for each interface if it's not a PCAP */
+	      if(iface &&	(iface->getIfType() != interface_type_PCAP_DUMP || !excludePcap())) {      
+		char script_path[MAX_PATH];
 	      
-	      /* Schedule interface script, one for each interface */
-              snprintf(script_path, sizeof(script_path), "%s%s", dir_path, ent->d_name);       
+		/* Schedule interface script, one for each interface */
+		snprintf(script_path, sizeof(script_path), "%s%s", dir_path, ent->d_name);       
          
-              if(pool->queueJob(this, script_path, iface, scheduled_time, deadline)) {
+		if(pool->queueJob(this, script_path, iface, scheduled_time, deadline)) {
 #ifdef THREAD_DEBUG
-                ntop->getTrace()->traceEvent(TRACE_NORMAL, "Queued interface job %s [%s]", script_path, iface->get_name());
+		  ntop->getTrace()->traceEvent(TRACE_NORMAL, "Queued interface job %s [%s]", script_path, iface->get_name());
 #endif
-              }
-            }
-          }
-        }
-      }
+		}
+	      }
+	    }
+	  }
+	}
       
-      closedir(dir_struct);
+	closedir(dir_struct);
+      }
     }
-  }
+  } /* for */
 }
 
 /* ******************************************* */
