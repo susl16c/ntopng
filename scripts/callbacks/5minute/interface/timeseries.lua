@@ -19,6 +19,7 @@ if not hasHighResolutionTs() then
   local when = os.time()
   local ifstats = interface.getStats()
   local _ifname = ifstats.name
+  local verbose = ntop.verboseTrace()
 
-  ts_dump.run_5min_dump(_ifname, ifstats, config, when)
+  ts_dump.run_5min_dump(_ifname, ifstats, config, when, verbose)
 end

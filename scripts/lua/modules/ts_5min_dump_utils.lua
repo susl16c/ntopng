@@ -813,7 +813,7 @@ end
 -- ########################################################
 
 -- NOTE: this is executed every minute if ts_utils.hasHighResolutionTs() is true
-function ts_dump.run_5min_dump(_ifname, ifstats, config, when)
+function ts_dump.run_5min_dump(_ifname, ifstats, config, when, verbose)
   local num_processed_hosts = 0
   local min_instant = when - (when % 60) - 60
 

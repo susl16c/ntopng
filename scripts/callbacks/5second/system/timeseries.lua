@@ -5,10 +5,16 @@
 dirs = ntop.getDirs()
 package.path = dirs.installdir .. "/scripts/lua/modules/?.lua;" .. package.path
 package.path = dirs.installdir .. "/scripts/lua/modules/timeseries/?.lua;" .. package.path
+
+-- ########################################################
+
 local ts_utils = require "ts_utils_core"
-require "ts_5sec"
 local cpu_utils = require "cpu_utils"
 local ts_dump = require "ts_5sec_dump_utils"
+
+-- ########################################################
+
+require "ts_5sec"
 
 -- ########################################################
 
@@ -21,7 +27,8 @@ for i=1,num_runs do
    local when = os.time()
    
    cpu_utils.compute_cpu_states()
-   
+
+   -- Update CPU load timeseries
    if(ntop.getPref("ntopng.prefs.system_probes_timeseries") ~= "0") then
       local cpu_load = ntop.refreshCPULoad()
 

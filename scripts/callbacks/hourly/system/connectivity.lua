@@ -9,6 +9,7 @@ local lists_utils = require "lists_utils"
 
 -- ########################################################
 
+-- Check ntopng connectivity
 -- If ntopng is in offline mode, retry checking connectivity
 if ntop.isOffline() then
    local connectivity_utils = require "connectivity_utils"
@@ -19,4 +20,5 @@ if ntop.isOffline() then
    end
 end
 
+-- Download lists
 lists_utils.downloadLists()

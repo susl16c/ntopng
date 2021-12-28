@@ -7,7 +7,6 @@ package.path = dirs.installdir .. "/scripts/lua/modules/?.lua;" .. package.path
 package.path = dirs.installdir .. "/scripts/lua/modules/timeseries/?.lua;" .. package.path
 
 local scripts_triggers = require "scripts_triggers"
-local ts_utils         = require "ts_utils"
 local data_retention_utils = require "data_retention_utils"
 
 -- ########################################################
@@ -17,12 +16,6 @@ local ifstats = interface.getStats()
 local _ifname = ifstats.name
 
 -- ########################################################
-
-local interface_id = getInterfaceId(_ifname)
-
--- Setting up periodic checks
-local k = string.format("ntopng.cache.ifid_%i.checks.request.granularity_day", interface.getId())
-ntop.setCache(k, "1")
 
 local data_retention = data_retention_utils.getDataRetentionDays()
 
@@ -35,7 +28,3 @@ if scripts_triggers.isDumpFlowToSQLEnabled(ifstats) then
    db_utils.harverstExpiredMySQLFlows(_ifname, mysql_retention, verbose)
 end
 
--- ###########################################
-
-ntop.deleteMinuteStatsOlderThan(interface_id, data_retention)
-ts_utils.deleteOldData(interface_id)

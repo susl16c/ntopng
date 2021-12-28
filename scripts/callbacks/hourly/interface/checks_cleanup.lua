@@ -13,11 +13,9 @@ local alert_store_utils = require "alert_store_utils"
 -- ########################################################
 
 local ifid = interface.getId()
-local k = string.format("ntopng.cache.ifid_%i.checks.request.granularity_hourly", interface.getId())
-ntop.setCache(k, "1")
 
 -- ########################################################
 
--- Alerts DB housekeeping (cleanup)
+-- Checks cleanup
 alert_store_utils.housekeeping(ifid)
 

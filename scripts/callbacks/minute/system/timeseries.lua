@@ -30,10 +30,3 @@ if scripts_triggers.isRrdInterfaceCreation() then
       ts_utils.append("iface:dropped_alerts", {ifid=getSystemInterfaceId(), dropped_alerts=ifstats.num_dropped_alerts}, when)
    end
 end
-
-if ntop.isPro() then
-   local drop_host_pool_utils = require "drop_host_pool_utils"
-
-   drop_host_pool_utils.check_periodic_hosts_list()
-   drop_host_pool_utils.check_pre_banned_hosts_to_add()
-end

@@ -8,8 +8,6 @@ package.path = dirs.installdir .. "/scripts/lua/modules/?.lua;" .. package.path
 require "lua_utils"
 local scripts_triggers    = require "scripts_triggers"
 local auth_sessions_utils = require "auth_sessions_utils"
-local db_utils = require "db_utils"
-local data_retention_utils = require "data_retention_utils"
 
 -- ########################################################
 
@@ -17,16 +15,10 @@ local data_retention_utils = require "data_retention_utils"
 -- TODO: make 30 configurable
 harvestJSONTopTalkers(30)
 
+-- Delete user session
 auth_sessions_utils.midnightCheck()
 
+-- Reset host/mac statistics
 if scripts_triggers.midnightStatsResetEnabled() then
-   -- Reset host/mac statistics
    ntop.resetStats()
-end
-
-if ntop.isClickHouseEnabled() then
-   local data_retention = data_retention_utils.getDataRetentionDays()
-   local mysql_retention = os.time() - 86400 * data_retention
-
-   db_utils.clickhouseDeleteOldPartitions(mysql_retention)
 end
