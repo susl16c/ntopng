@@ -75,7 +75,6 @@ checks.operator_functions = {
 -- A default check definition for all checks associated to nDPI risks that don't have an explicitly defined .lua check_definition file
 local FLOW_RISK_SIMPLE_CHECK_DEFINITION_PATH = os_utils.fixPath(string.format("%s/scripts/lua/modules/flow_risk_simple_check_definition.lua", dirs.installdir))
 local NUM_FILTERED_KEY = "ntopng.cache.checks.exclusion_counter.subdir_%s.script_key_%s"
-local REQUEST_PERIODIC_USER_SCRIPTS_RUN_KEY = "ntopng.cache.ifid_%i.checks.request.granularity_%s"
 local NON_TRAFFIC_ELEMENT_CONF_KEY = "all"
 local NON_TRAFFIC_ELEMENT_ENTITY = "no_entity"
 local ALL_HOOKS_CONFIG_KEY = "all"
@@ -924,15 +923,6 @@ function checks.loadModule(ifid, script_type, subdir, mod_fname)
    end
 
    return check
-end
-
--- ##############################################
-
-function checks.schedulePeriodicScripts(granularity)
-   if alert_consts.alerts_granularities[granularity] then
-      local k = string.format(REQUEST_PERIODIC_USER_SCRIPTS_RUN_KEY, interface.getId(), granularity)
-      ntop.setCache(k, "1")
-   end
 end
 
 -- ##############################################
@@ -2375,7 +2365,11 @@ function checks.releaseLocalNetworkChecks(granularity)
 end
 
 -- #################################################################
--- Setup, run and shutdown periodic interface and network checks
+-- @brief Setup, run and shutdown interface, network, system and 
+--        SNMP checks
+--        The setup, loads the alerts, needs to be done once per VM
+--        The run, cycle all the alerts and execute them
+--        The teardown, unloads the alerts from the vm   
 -- #################################################################
 
 -- #################################################################

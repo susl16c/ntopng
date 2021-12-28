@@ -27,4 +27,9 @@ local do_trace = false
 
 -- #################################################################
 
+-- TODO: Remove ping from the active monitoring alert. Right now
+--       the ping is done by the script active_monitoring.lua that
+--       is the script managing the checks of the active monitoring.
+--       Separate them into two scripts, uno that executes the pings
+--       and the other one that executes the checks.
 checks.systemChecks(granularity, checks_var, do_trace)
