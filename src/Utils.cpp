@@ -34,7 +34,7 @@
 static const char *hex_chars = "0123456789ABCDEF";
 
 static map<string, int> initTcpStatesStr2State() {
-  map<string, int>states_map;
+  map<string, int> states_map;
 
   states_map["ESTABLISHED"] = TCP_ESTABLISHED;
   states_map["SYN-SENT"] = TCP_SYN_SENT;
@@ -52,7 +52,7 @@ static map<string, int> initTcpStatesStr2State() {
 }
 
 static map<string, eBPFEventType> initeBPFEventTypeStr2Type() {
-  map<string, eBPFEventType>events_map;
+  map<string, eBPFEventType> events_map;
 
   /* TCP EVENTS */
   events_map["ACCEPT"] = ebpf_event_type_tcp_accept;
@@ -68,22 +68,26 @@ static map<string, eBPFEventType> initeBPFEventTypeStr2Type() {
   return events_map;
 };
 
-static map<int, string> initTcpStates2StatesStr(const map<string, int> &tcp_states_str_to_state) {
-  map<int, string>states_map;
+static map<int, string>
+initTcpStates2StatesStr(const map<string, int> &tcp_states_str_to_state) {
+  map<int, string> states_map;
   map<string, int>::const_iterator it;
 
-  for(it = tcp_states_str_to_state.begin(); it != tcp_states_str_to_state.end(); it++) {
+  for (it = tcp_states_str_to_state.begin();
+       it != tcp_states_str_to_state.end(); it++) {
     states_map[it->second] = it->first;
   }
 
   return states_map;
 }
 
-static map<eBPFEventType, string> initeBPFEventType2TypeStr(const map<string, eBPFEventType> &tcp_states_str_to_state) {
-  map<eBPFEventType, string>events_map;
+static map<eBPFEventType, string> initeBPFEventType2TypeStr(
+    const map<string, eBPFEventType> &tcp_states_str_to_state) {
+  map<eBPFEventType, string> events_map;
   map<string, eBPFEventType>::const_iterator it;
 
-  for(it = tcp_states_str_to_state.begin(); it != tcp_states_str_to_state.end(); it++) {
+  for (it = tcp_states_str_to_state.begin();
+       it != tcp_states_str_to_state.end(); it++) {
     events_map[it->second] = it->first;
   }
 
@@ -91,9 +95,12 @@ static map<eBPFEventType, string> initeBPFEventType2TypeStr(const map<string, eB
 };
 
 static const map<string, int> tcp_state_str_2_state = initTcpStatesStr2State();
-static const map<int, string> tcp_state_2_state_str = initTcpStates2StatesStr(tcp_state_str_2_state);
-static const map<string, eBPFEventType> ebpf_event_str_2_event = initeBPFEventTypeStr2Type();
-static const map<eBPFEventType, string> ebpf_event_2_event_str = initeBPFEventType2TypeStr(ebpf_event_str_2_event);
+static const map<int, string> tcp_state_2_state_str =
+    initTcpStates2StatesStr(tcp_state_str_2_state);
+static const map<string, eBPFEventType> ebpf_event_str_2_event =
+    initeBPFEventTypeStr2Type();
+static const map<eBPFEventType, string> ebpf_event_2_event_str =
+    initeBPFEventType2TypeStr(ebpf_event_str_2_event);
 
 // A simple struct for strings.
 typedef struct {
@@ -103,9 +110,9 @@ typedef struct {
 
 typedef struct {
   u_int8_t header_over;
-  char outbuf[3*65536];
+  char outbuf[3 * 65536];
   u_int num_bytes;
-  lua_State* vm;
+  lua_State *vm;
   bool return_content;
 } DownloadState;
 
@@ -119,110 +126,128 @@ typedef struct {
 #include <sys/prctl.h>
 
 static cap_value_t cap_values[] = {
-				   CAP_DAC_OVERRIDE, /* Bypass file read, write, and execute permission checks  */				   
-				   CAP_NET_ADMIN,    /* Perform various network-related operations */
-				   CAP_NET_RAW       /* Use RAW and PACKET sockets */
+    CAP_DAC_OVERRIDE, /* Bypass file read, write, and execute permission checks
+                       */
+    CAP_NET_ADMIN,    /* Perform various network-related operations */
+    CAP_NET_RAW       /* Use RAW and PACKET sockets */
 };
 
-int num_cap = sizeof(cap_values)/sizeof(cap_value_t);
+int num_cap = sizeof(cap_values) / sizeof(cap_value_t);
 #endif
 
-static size_t curl_writefunc_to_lua(char *buffer, size_t size, size_t nitems, void *userp);
+static size_t curl_writefunc_to_lua(char *buffer, size_t size, size_t nitems,
+                                    void *userp);
 static size_t curl_hdf(char *buffer, size_t size, size_t nitems, void *userp);
 
 /* ****************************************************** */
 
-char* Utils::jsonLabel(int label, const char *label_str,char *buf, u_int buf_len) {
-  if(ntop->getPrefs()->json_labels_as_strings()) {
+char *Utils::jsonLabel(int label, const char *label_str, char *buf,
+                       u_int buf_len) {
+  if (ntop->getPrefs()->json_labels_as_strings()) {
     snprintf(buf, buf_len, "%s", label_str);
   } else
     snprintf(buf, buf_len, "%d", label);
 
-  return(buf);
+  return (buf);
 }
 
 /* ****************************************************** */
 
-char* Utils::formatTraffic(float numBits, bool bits, char *buf, u_int buf_len) {
+char *Utils::formatTraffic(float numBits, bool bits, char *buf, u_int buf_len) {
   char unit;
 
-  if(bits)
+  if (bits)
     unit = 'b';
   else
     unit = 'B';
 
-  if(numBits < 1024) {
+  if (numBits < 1024) {
     snprintf(buf, buf_len, "%lu %c", (unsigned long)numBits, unit);
-  } else if(numBits < 1048576) {
-    snprintf(buf, buf_len, "%.2f K%c", (float)(numBits)/1024, unit);
+  } else if (numBits < 1048576) {
+    snprintf(buf, buf_len, "%.2f K%c", (float)(numBits) / 1024, unit);
   } else {
-    float tmpMBits = ((float)numBits)/1048576;
+    float tmpMBits = ((float)numBits) / 1048576;
 
-    if(tmpMBits < 1024) {
+    if (tmpMBits < 1024) {
       snprintf(buf, buf_len, "%.2f M%c", tmpMBits, unit);
     } else {
       tmpMBits /= 1024;
 
-      if(tmpMBits < 1024) {
-	snprintf(buf, buf_len, "%.2f G%c", tmpMBits, unit);
+      if (tmpMBits < 1024) {
+        snprintf(buf, buf_len, "%.2f G%c", tmpMBits, unit);
       } else {
-	snprintf(buf, buf_len, "%.2f T%c", (float)(tmpMBits)/1024, unit);
+        snprintf(buf, buf_len, "%.2f T%c", (float)(tmpMBits) / 1024, unit);
       }
     }
   }
 
-  return(buf);
+  return (buf);
 }
 
 /* ****************************************************** */
 
-char* Utils::formatPackets(float numPkts, char *buf, u_int buf_len) {
-  if(numPkts < 1000) {
+char *Utils::formatPackets(float numPkts, char *buf, u_int buf_len) {
+  if (numPkts < 1000) {
     snprintf(buf, buf_len, "%.2f", numPkts);
-  } else if(numPkts < 1000000) {
-    snprintf(buf, buf_len, "%.2f K", numPkts/(float)1000);
+  } else if (numPkts < 1000000) {
+    snprintf(buf, buf_len, "%.2f K", numPkts / (float)1000);
   } else {
     numPkts /= 1000000;
     snprintf(buf, buf_len, "%.2f M", numPkts);
   }
 
-  return(buf);
+  return (buf);
 }
 
 /* ****************************************************** */
 
-char* Utils::l4proto2name(u_int8_t proto) {
+char *Utils::l4proto2name(u_int8_t proto) {
   static char proto_string[8];
 
   /* NOTE: keep in sync with /lua/pro/db_explorer_data.lua */
 
-  switch(proto) {
-  case 0:   return((char*)"IP");
-  case 1:   return((char*)"ICMP");
-  case 2:   return((char*)"IGMP");
-  case 6:   return((char*)"TCP");
-  case 17:  return((char*)"UDP");
-  case 41:  return((char*)"IPv6");
-  case 46:  return((char*)"RSVP");
-  case 47:  return((char*)"GRE");
-  case 50:  return((char*)"ESP");
-  case 51:  return((char*)"AH");
-  case 58:  return((char*)"IPv6-ICMP");
-  case 89:  return((char*)"OSPF");
-  case 103: return((char*)"PIM");
-  case 112: return((char*)"VRRP");
-  case 139: return((char*)"HIP");
+  switch (proto) {
+  case 0:
+    return ((char *)"IP");
+  case 1:
+    return ((char *)"ICMP");
+  case 2:
+    return ((char *)"IGMP");
+  case 6:
+    return ((char *)"TCP");
+  case 17:
+    return ((char *)"UDP");
+  case 41:
+    return ((char *)"IPv6");
+  case 46:
+    return ((char *)"RSVP");
+  case 47:
+    return ((char *)"GRE");
+  case 50:
+    return ((char *)"ESP");
+  case 51:
+    return ((char *)"AH");
+  case 58:
+    return ((char *)"IPv6-ICMP");
+  case 89:
+    return ((char *)"OSPF");
+  case 103:
+    return ((char *)"PIM");
+  case 112:
+    return ((char *)"VRRP");
+  case 139:
+    return ((char *)"HIP");
 
   default:
     snprintf(proto_string, sizeof(proto_string), "%u", proto);
-    return(proto_string);
+    return (proto_string);
   }
 }
 
 /* ****************************************************** */
 
-const char* Utils::edition2name(NtopngEdition ntopng_edition) {
-  switch(ntopng_edition) {
+const char *Utils::edition2name(NtopngEdition ntopng_edition) {
+  switch (ntopng_edition) {
   case ntopng_edition_community:
     return "community";
   case ntopng_edition_pro:
@@ -239,51 +264,91 @@ const char* Utils::edition2name(NtopngEdition ntopng_edition) {
 /* ****************************************************** */
 
 u_int8_t Utils::l4name2proto(const char *name) {
-       if(strcmp(name, "IP") == 0) return 0;
-  else if(strcmp(name, "ICMP") == 0) return 1;
-  else if(strcmp(name, "IGMP") == 0) return 2;
-  else if(strcmp(name, "TCP") == 0) return 6;
-  else if(strcmp(name, "UDP") == 0) return 17;
-  else if(strcmp(name, "IPv6") == 0) return 41;
-  else if(strcmp(name, "RSVP") == 0) return 46;
-  else if(strcmp(name, "GRE") == 0) return 47;
-  else if(strcmp(name, "ESP") == 0) return 50;
-  else if(strcmp(name, "AH") == 0) return 51;
-  else if(strcmp(name, "IPv6-ICMP") == 0) return 58;
-  else if(strcmp(name, "OSPF") == 0) return 89;
-  else if(strcmp(name, "PIM") == 0) return 103;
-  else if(strcmp(name, "VRRP") == 0) return 112;
-  else if(strcmp(name, "HIP") == 0) return 139;
-  else return 0;
+  if (strcmp(name, "IP") == 0)
+    return 0;
+  else if (strcmp(name, "ICMP") == 0)
+    return 1;
+  else if (strcmp(name, "IGMP") == 0)
+    return 2;
+  else if (strcmp(name, "TCP") == 0)
+    return 6;
+  else if (strcmp(name, "UDP") == 0)
+    return 17;
+  else if (strcmp(name, "IPv6") == 0)
+    return 41;
+  else if (strcmp(name, "RSVP") == 0)
+    return 46;
+  else if (strcmp(name, "GRE") == 0)
+    return 47;
+  else if (strcmp(name, "ESP") == 0)
+    return 50;
+  else if (strcmp(name, "AH") == 0)
+    return 51;
+  else if (strcmp(name, "IPv6-ICMP") == 0)
+    return 58;
+  else if (strcmp(name, "OSPF") == 0)
+    return 89;
+  else if (strcmp(name, "PIM") == 0)
+    return 103;
+  else if (strcmp(name, "VRRP") == 0)
+    return 112;
+  else if (strcmp(name, "HIP") == 0)
+    return 139;
+  else
+    return 0;
 }
 
 /* ****************************************************** */
 
 u_int8_t Utils::queryname2type(const char *name) {
-       if(strcmp(name, "A") == 0) return 1;
-  else if(strcmp(name, "NS") == 0) return 2;
-  else if(strcmp(name, "MD") == 0) return 3;
-  else if(strcmp(name, "MF") == 0) return 4;
-  else if(strcmp(name, "CNAME") == 0) return 5;
-  else if(strcmp(name, "SOA") == 0) return 6;
-  else if(strcmp(name, "MB") == 0) return 7;
-  else if(strcmp(name, "MG") == 0) return 8;
-  else if(strcmp(name, "MR") == 0) return 9;
-  else if(strcmp(name, "NULL") == 0) return 10;
-  else if(strcmp(name, "WKS") == 0) return 11;
-  else if(strcmp(name, "PTR") == 0) return 12;
-  else if(strcmp(name, "HINFO") == 0) return 13;
-  else if(strcmp(name, "MINFO") == 0) return 14;
-  else if(strcmp(name, "MX") == 0) return 15;
-  else if(strcmp(name, "TXT") == 0) return 16;
-  else if(strcmp(name, "AAAA") == 0) return 28;
-  else if(strcmp(name, "A6") == 0) return 38;
-  else if(strcmp(name, "SPF") == 0) return 99;
-  else if(strcmp(name, "AXFR") == 0) return 252;
-  else if(strcmp(name, "MAILB") == 0) return 253;
-  else if(strcmp(name, "MAILA") == 0) return 254;
-  else if(strcmp(name, "ANY") == 0) return 255;
-  else return 0;
+  if (strcmp(name, "A") == 0)
+    return 1;
+  else if (strcmp(name, "NS") == 0)
+    return 2;
+  else if (strcmp(name, "MD") == 0)
+    return 3;
+  else if (strcmp(name, "MF") == 0)
+    return 4;
+  else if (strcmp(name, "CNAME") == 0)
+    return 5;
+  else if (strcmp(name, "SOA") == 0)
+    return 6;
+  else if (strcmp(name, "MB") == 0)
+    return 7;
+  else if (strcmp(name, "MG") == 0)
+    return 8;
+  else if (strcmp(name, "MR") == 0)
+    return 9;
+  else if (strcmp(name, "NULL") == 0)
+    return 10;
+  else if (strcmp(name, "WKS") == 0)
+    return 11;
+  else if (strcmp(name, "PTR") == 0)
+    return 12;
+  else if (strcmp(name, "HINFO") == 0)
+    return 13;
+  else if (strcmp(name, "MINFO") == 0)
+    return 14;
+  else if (strcmp(name, "MX") == 0)
+    return 15;
+  else if (strcmp(name, "TXT") == 0)
+    return 16;
+  else if (strcmp(name, "AAAA") == 0)
+    return 28;
+  else if (strcmp(name, "A6") == 0)
+    return 38;
+  else if (strcmp(name, "SPF") == 0)
+    return 99;
+  else if (strcmp(name, "AXFR") == 0)
+    return 252;
+  else if (strcmp(name, "MAILB") == 0)
+    return 253;
+  else if (strcmp(name, "MAILA") == 0)
+    return 254;
+  else if (strcmp(name, "ANY") == 0)
+    return 255;
+  else
+    return 0;
 }
 
 /* ****************************************************** */
@@ -292,18 +357,18 @@ bool Utils::isIPAddress(const char *ip) {
   struct in_addr addr4;
   struct in6_addr addr6;
 
-  if((ip == NULL) || (ip[0] == '\0'))
-    return(false);
+  if ((ip == NULL) || (ip[0] == '\0'))
+    return (false);
 
-  if(strchr(ip, ':') != NULL) { /* IPv6 */
-    if(inet_pton(AF_INET6, ip, &addr6) == 1)
-      return(true);
+  if (strchr(ip, ':') != NULL) { /* IPv6 */
+    if (inet_pton(AF_INET6, ip, &addr6) == 1)
+      return (true);
   } else {
-    if(inet_pton(AF_INET, ip, &addr4) == 1)
-      return(true);
+    if (inet_pton(AF_INET, ip, &addr4) == 1)
+      return (true);
   }
 
-  return(false);
+  return (false);
 }
 
 /* ****************************************************** */
@@ -318,10 +383,10 @@ int Utils::setAffinityMask(char *cores_list, cpu_set_t *mask) {
 
   CPU_ZERO(mask);
 
-  if(cores_list == NULL)
+  if (cores_list == NULL)
     return 0;
 
-  if(num_cores <= 1)
+  if (num_cores <= 1)
     return 0;
 
   core_id_s = strtok_r(cores_list, ",", &tmp);
@@ -346,14 +411,14 @@ int Utils::setAffinityMask(char *cores_list, cpu_set_t *mask) {
 int Utils::setThreadAffinityWithMask(pthread_t thread, cpu_set_t *mask) {
   int ret = -1;
 
-  if(mask == NULL || CPU_COUNT(mask) == 0)
-    return(0);
+  if (mask == NULL || CPU_COUNT(mask) == 0)
+    return (0);
 
 #ifdef HAVE_LIBCAP
   ret = pthread_setaffinity_np(thread, sizeof(cpu_set_t), mask);
 #endif
 
-  return(ret);
+  return (ret);
 }
 #endif
 
@@ -361,8 +426,8 @@ int Utils::setThreadAffinityWithMask(pthread_t thread, cpu_set_t *mask) {
 
 int Utils::setThreadAffinity(pthread_t thread, int core_id) {
 #ifdef __linux__
-  if(core_id < 0)
-    return(0);
+  if (core_id < 0)
+    return (0);
   else {
     int ret = -1;
 #ifdef HAVE_LIBCAP
@@ -370,17 +435,17 @@ int Utils::setThreadAffinity(pthread_t thread, int core_id) {
     u_long core = core_id % num_cores;
     cpu_set_t cpu_set;
 
-    if(num_cores > 1) {
+    if (num_cores > 1) {
       CPU_ZERO(&cpu_set);
       CPU_SET(core, &cpu_set);
       ret = setThreadAffinityWithMask(thread, &cpu_set);
     }
 #endif
 
-    return(ret);
+    return (ret);
   }
 #else
-  return(0);
+  return (0);
 #endif
 }
 
@@ -393,19 +458,21 @@ void Utils::setThreadName(const char *name) {
   int rc;
   char *bname = NULL;
 
-  if(Utils::file_exists(name)) {
-    bname = strrchr((char*)name, '/');
-    if(bname) bname++;
+  if (Utils::file_exists(name)) {
+    bname = strrchr((char *)name, '/');
+    if (bname)
+      bname++;
   }
 
   snprintf(buf, sizeof(buf), "%s", bname ? bname : name);
 
 #if defined(__APPLE__)
-  if((rc = pthread_setname_np(buf)))
+  if ((rc = pthread_setname_np(buf)))
 #else
-  if((rc = pthread_setname_np(pthread_self(), buf)))
+  if ((rc = pthread_setname_np(pthread_self(), buf)))
 #endif
-    ntop->getTrace()->traceEvent(TRACE_WARNING, "Unable to set pthread name %s: %d", buf, rc);
+    ntop->getTrace()->traceEvent(TRACE_WARNING,
+                                 "Unable to set pthread name %s: %d", buf, rc);
 #endif
 }
 
@@ -414,12 +481,13 @@ void Utils::setThreadName(const char *name) {
 char *Utils::trim(char *s) {
   char *end;
 
-  while(isspace(s[0]) || (s[0] == '"') || (s[0] == '\'')) s++;
-  if(s[0] == 0) return s;
+  while (isspace(s[0]) || (s[0] == '"') || (s[0] == '\''))
+    s++;
+  if (s[0] == 0)
+    return s;
 
   end = &s[strlen(s) - 1];
-  while(end > s
-	&& (isspace(end[0])|| (end[0] == '"') || (end[0] == '\'')))
+  while (end > s && (isspace(end[0]) || (end[0] == '"') || (end[0] == '\'')))
     end--;
   end[1] = 0;
 
@@ -428,13 +496,13 @@ char *Utils::trim(char *s) {
 
 /* ****************************************************** */
 
-u_int32_t Utils::hashString(const char * key) {
-  if(!key)
+u_int32_t Utils::hashString(const char *key) {
+  if (!key)
     return 0;
 
   u_int32_t hash = 0, len = (u_int32_t)strlen(key);
 
-  for(u_int32_t i = 0; i < len; i++)
+  for (u_int32_t i = 0; i < len; i++)
     hash += ((u_int32_t)key[i]) * i;
 
   return hash;
@@ -443,50 +511,52 @@ u_int32_t Utils::hashString(const char * key) {
 /* ****************************************************** */
 
 float Utils::timeval2ms(const struct timeval *tv) {
-  return((float)tv->tv_sec*1000+(float)tv->tv_usec/1000);
+  return ((float)tv->tv_sec * 1000 + (float)tv->tv_usec / 1000);
 }
 
 /* ****************************************************** */
 
 u_int32_t Utils::timeval2usec(const struct timeval *tv) {
-  return(tv->tv_sec*1000000+tv->tv_usec);
+  return (tv->tv_sec * 1000000 + tv->tv_usec);
 }
 
 /* ****************************************************** */
 
-u_int32_t Utils::usecTimevalDiff(const struct timeval *end, const struct timeval *begin) {
-  if((end->tv_sec == 0) && (end->tv_usec == 0))
-    return(0);
+u_int32_t Utils::usecTimevalDiff(const struct timeval *end,
+                                 const struct timeval *begin) {
+  if ((end->tv_sec == 0) && (end->tv_usec == 0))
+    return (0);
   else {
     struct timeval res;
 
     res.tv_sec = end->tv_sec - begin->tv_sec;
-    if(begin->tv_usec > end->tv_usec) {
+    if (begin->tv_usec > end->tv_usec) {
       res.tv_usec = end->tv_usec + 1000000 - begin->tv_usec;
       res.tv_sec--;
     } else
       res.tv_usec = end->tv_usec - begin->tv_usec;
 
-    return((res.tv_sec*1000000) + (res.tv_usec));
+    return ((res.tv_sec * 1000000) + (res.tv_usec));
   }
 }
 
 /* ****************************************************** */
 
-float Utils::msTimevalDiff(const struct timeval *end, const struct timeval *begin) {
-  if((end->tv_sec == 0) && (end->tv_usec == 0))
-    return(0);
+float Utils::msTimevalDiff(const struct timeval *end,
+                           const struct timeval *begin) {
+  if ((end->tv_sec == 0) && (end->tv_usec == 0))
+    return (0);
   else {
     struct timeval res;
 
     res.tv_sec = end->tv_sec - begin->tv_sec;
-    if(begin->tv_usec > end->tv_usec) {
+    if (begin->tv_usec > end->tv_usec) {
       res.tv_usec = end->tv_usec + 1000000 - begin->tv_usec;
       res.tv_sec--;
     } else
       res.tv_usec = end->tv_usec - begin->tv_usec;
 
-    return(((float)res.tv_sec*1000) + ((float)res.tv_usec/(float)1000));
+    return (((float)res.tv_sec * 1000) + ((float)res.tv_usec / (float)1000));
   }
 }
 
@@ -501,7 +571,7 @@ time_t Utils::str2epoch(const char *str) {
 
   memset(&tm, 0, sizeof(tm));
 
-  if(strptime(str, format, &tm) == NULL)
+  if (strptime(str, format, &tm) == NULL)
     return 0;
 
   t = mktime(&tm) + (3600 * tm.tm_isdst);
@@ -510,7 +580,7 @@ time_t Utils::str2epoch(const char *str) {
   t -= tm.tm_gmtoff;
 #endif
 
-  if(t == -1)
+  if (t == -1)
     return 0;
 
   return t;
@@ -521,7 +591,8 @@ time_t Utils::str2epoch(const char *str) {
 bool Utils::file_exists(const char *path) {
   std::ifstream infile(path);
 
-  /*  ntop->getTrace()->traceEvent(TRACE_WARNING, "%s(): %s", __FUNCTION__, path); */
+  /*  ntop->getTrace()->traceEvent(TRACE_WARNING, "%s(): %s", __FUNCTION__,
+   * path); */
   bool ret = infile.good();
   infile.close();
   return ret;
@@ -529,7 +600,7 @@ bool Utils::file_exists(const char *path) {
 
 /* ****************************************************** */
 
-bool Utils::dir_exists(const char * path) {
+bool Utils::dir_exists(const char *path) {
   struct stat buf;
 
   return !((stat(path, &buf) != 0) || (!S_ISDIR(buf.st_mode)));
@@ -537,12 +608,14 @@ bool Utils::dir_exists(const char * path) {
 
 /* ****************************************************** */
 
-size_t Utils::file_write(const char *path, const char *content, size_t content_len) {
+size_t Utils::file_write(const char *path, const char *content,
+                         size_t content_len) {
   size_t ret = 0;
   FILE *fd = fopen(path, "wb");
 
-  if(fd == NULL) {
-    ntop->getTrace()->traceEvent(TRACE_WARNING, "Unable to write file %s", path);
+  if (fd == NULL) {
+    ntop->getTrace()->traceEvent(TRACE_WARNING, "Unable to write file %s",
+                                 path);
   } else {
 #ifndef WIN32
     chmod(path, CONST_DEFAULT_FILE_MODE);
@@ -563,19 +636,19 @@ size_t Utils::file_read(const char *path, char **content) {
   u_int64_t length;
   FILE *f = fopen(path, "rb");
 
-  if(f) {
-    fseek (f, 0, SEEK_END);
+  if (f) {
+    fseek(f, 0, SEEK_END);
     length = ftell(f);
-    fseek (f, 0, SEEK_SET);
+    fseek(f, 0, SEEK_SET);
 
-    buffer = (char*)malloc(length);
-    if(buffer)
+    buffer = (char *)malloc(length);
+    if (buffer)
       ret = fread(buffer, 1, length, f);
 
     fclose(f);
 
-    if(buffer) {
-      if(content && ret)
+    if (buffer) {
+      if (content && ret)
         *content = buffer;
       else
         free(buffer);
@@ -587,33 +660,33 @@ size_t Utils::file_read(const char *path, char **content) {
 
 /* ****************************************************** */
 
-int Utils::remove_recursively(const char * path) {
+int Utils::remove_recursively(const char *path) {
   DIR *d = opendir(path);
   size_t path_len = strlen(path);
   int r = -1;
   size_t len;
   char *buf;
 
-  if(d) {
+  if (d) {
     struct dirent *p;
 
     r = 0;
 
-    while ((r==0) && (p=readdir(d))) {
+    while ((r == 0) && (p = readdir(d))) {
       /* Skip the names "." and ".." as we don't want to recurse on them. */
-      if(!strcmp(p->d_name, ".") || !strcmp(p->d_name, ".."))
-	continue;
+      if (!strcmp(p->d_name, ".") || !strcmp(p->d_name, ".."))
+        continue;
 
       len = path_len + strlen(p->d_name) + 2;
-      buf = (char *) malloc(len);
+      buf = (char *)malloc(len);
 
-      if(buf) {
-	    struct stat statbuf;
+      if (buf) {
+        struct stat statbuf;
 
         snprintf(buf, len, "%s/%s", path, p->d_name);
 
-        if(stat(buf, &statbuf) == 0) {
-          if(S_ISDIR(statbuf.st_mode))
+        if (stat(buf, &statbuf) == 0) {
+          if (S_ISDIR(statbuf.st_mode))
             r = remove_recursively(buf);
           else
             r = unlink(buf);
@@ -626,7 +699,7 @@ int Utils::remove_recursively(const char * path) {
     closedir(d);
   }
 
-  if(r == 0)
+  if (r == 0)
     r = rmdir(path);
 
   return r;
@@ -634,19 +707,20 @@ int Utils::remove_recursively(const char * path) {
 
 /* ****************************************************** */
 
-bool Utils::mkdir_tree(char * const path) {
+bool Utils::mkdir_tree(char *const path) {
   int rc;
   struct stat s;
 
   ntop->fixPath(path);
 
-  if(stat(path, &s) != 0) {
+  if (stat(path, &s) != 0) {
     /* Start at 1 to skip the root */
-    for(int i=1; path[i] != '\0'; i++)
-      if(path[i] == CONST_PATH_SEP) {
+    for (int i = 1; path[i] != '\0'; i++)
+      if (path[i] == CONST_PATH_SEP) {
 #ifdef WIN32
-	/* Do not create devices directory */
-	if((i > 1) && (path[i-1] == ':')) continue;
+        /* Do not create devices directory */
+        if ((i > 1) && (path[i - 1] == ':'))
+          continue;
 #endif
 
         /*
@@ -655,63 +729,64 @@ bool Utils::mkdir_tree(char * const path) {
          * CONST_PATH_SEP, do not create the final
          * directory: it will be created later.
          */
-        if(path[i+1] == '\0')
+        if (path[i + 1] == '\0')
           break;
 
-	path[i] = '\0';
-	rc = Utils::mkdir(path, CONST_DEFAULT_DIR_MODE);
+        path[i] = '\0';
+        rc = Utils::mkdir(path, CONST_DEFAULT_DIR_MODE);
 
-	path[i] = CONST_PATH_SEP;
+        path[i] = CONST_PATH_SEP;
       }
 
     rc = Utils::mkdir(path, CONST_DEFAULT_DIR_MODE);
 
-    return(((rc == 0) || (errno == EEXIST/* Already existing */)) ? true : false);
+    return (((rc == 0) || (errno == EEXIST /* Already existing */)) ? true
+                                                                    : false);
   } else
-    return(true); /* Already existing */
+    return (true); /* Already existing */
 }
 
 /* **************************************************** */
 
 int Utils::mkdir(const char *path, mode_t mode) {
 #ifdef WIN32
-  return(_mkdir(path));
+  return (_mkdir(path));
 #else
   int rc = ::mkdir(path, mode);
 
-  if(rc == -1) {
-    if(errno != EEXIST)
+  if (rc == -1) {
+    if (errno != EEXIST)
       ntop->getTrace()->traceEvent(TRACE_WARNING, "mkdir(%s) failed [%d/%s]",
-				   path, errno, strerror(errno));
+                                   path, errno, strerror(errno));
   } else {
-    if(chmod(path, mode) == -1) /* Ubuntu 18 */
+    if (chmod(path, mode) == -1) /* Ubuntu 18 */
       ntop->getTrace()->traceEvent(TRACE_WARNING, "chmod(%s) failed [%d/%s]",
-				   path, errno, strerror(errno));
+                                   path, errno, strerror(errno));
   }
 
-  return(rc);
+  return (rc);
 #endif
 }
 
 /* **************************************************** */
 
-const char* Utils::trend2str(ValueTrend t) {
-  switch(t) {
+const char *Utils::trend2str(ValueTrend t) {
+  switch (t) {
   case trend_up:
-    return("Up");
+    return ("Up");
     break;
 
   case trend_down:
-    return("Down");
+    return ("Down");
     break;
 
   case trend_stable:
-    return("Stable");
+    return ("Stable");
     break;
 
   default:
   case trend_unknown:
-    return("Unknown");
+    return ("Unknown");
     break;
   }
 }
@@ -724,58 +799,61 @@ int Utils::dropPrivileges() {
   const char *username;
   int rv;
 
-  if(getgid() && getuid()) {
-    ntop->getTrace()->traceEvent(TRACE_NORMAL,
-				 "Privileges are not dropped as we're not superuser");
+  if (getgid() && getuid()) {
+    ntop->getTrace()->traceEvent(
+        TRACE_NORMAL, "Privileges are not dropped as we're not superuser");
     return -1;
   }
 
-  if(Utils::retainWriteCapabilities() != 0) {
+  if (Utils::retainWriteCapabilities() != 0) {
 #ifdef HAVE_LIBCAP
-    ntop->getTrace()->traceEvent(TRACE_WARNING,
-				 "Unable to retain privileges for privileged file writing");
+    ntop->getTrace()->traceEvent(
+        TRACE_WARNING,
+        "Unable to retain privileges for privileged file writing");
 #endif
   }
 
   username = ntop->getPrefs()->get_user();
   pw = getpwnam(username);
 
-  if(pw == NULL) {
+  if (pw == NULL) {
     /* if the user (e.g. 'ntopng') does not exists, falls back to 'nobody' */
     username = CONST_OLD_DEFAULT_NTOP_USER;
     pw = getpwnam(username);
   }
 
-  if(pw != NULL) {
+  if (pw != NULL) {
     /* Change the working dir ownership */
     rv = chown(ntop->get_working_dir(), pw->pw_uid, pw->pw_gid);
-    if(rv != 0)
-      ntop->getTrace()->traceEvent(TRACE_ERROR, "Unable to change working dir '%s' owner",
-				   ntop->get_working_dir());
+    if (rv != 0)
+      ntop->getTrace()->traceEvent(TRACE_ERROR,
+                                   "Unable to change working dir '%s' owner",
+                                   ntop->get_working_dir());
 
-    if(ntop->getPrefs()->get_pid_path() != NULL) {
+    if (ntop->getPrefs()->get_pid_path() != NULL) {
       /* Change PID file ownership to be able to delete it on shutdown */
       rv = chown(ntop->getPrefs()->get_pid_path(), pw->pw_uid, pw->pw_gid);
-      if(rv != 0)
-        ntop->getTrace()->traceEvent(TRACE_ERROR, "Unable to change owner to PID in file %s",
-				     ntop->getPrefs()->get_pid_path());
+      if (rv != 0)
+        ntop->getTrace()->traceEvent(TRACE_ERROR,
+                                     "Unable to change owner to PID in file %s",
+                                     ntop->getPrefs()->get_pid_path());
     }
 
     /* Drop privileges */
-    /* Dear programmer, initgroups() is necessary as there may be extra groups for the user that we are going to
-       drop privileges to that are not yet visible. This can happen for newely created groups, or when a user has
+    /* Dear programmer, initgroups() is necessary as there may be extra groups
+       for the user that we are going to drop privileges to that are not yet
+       visible. This can happen for newely created groups, or when a user has
        been added to a new group.
        Don't remove it or you will waste hours of life.
      */
-    if((initgroups(pw->pw_name, pw->pw_gid) != 0)
-       || (setgid(pw->pw_gid) != 0)
-       || (setuid(pw->pw_uid) != 0)) {
-      ntop->getTrace()->traceEvent(TRACE_WARNING, "Unable to drop privileges [%s]",
-				   strerror(errno));
+    if ((initgroups(pw->pw_name, pw->pw_gid) != 0) ||
+        (setgid(pw->pw_gid) != 0) || (setuid(pw->pw_uid) != 0)) {
+      ntop->getTrace()->traceEvent(
+          TRACE_WARNING, "Unable to drop privileges [%s]", strerror(errno));
       return -1;
     }
 
-    if(ntop)
+    if (ntop)
       ntop->setDroppedPrivileges();
 
     ntop->getTrace()->traceEvent(TRACE_NORMAL, "User changed to %s", username);
@@ -783,7 +861,8 @@ int Utils::dropPrivileges() {
     ntop->getTrace()->traceEvent(TRACE_INFO, "Umask: %#o", umask(0077));
 #endif
   } else {
-    ntop->getTrace()->traceEvent(TRACE_WARNING, "Unable to locate user %s", username);
+    ntop->getTrace()->traceEvent(TRACE_WARNING, "Unable to locate user %s",
+                                 username);
     return -1;
   }
   // umask(0);
@@ -794,11 +873,9 @@ int Utils::dropPrivileges() {
 /* **************************************************** */
 
 /* http://www.adp-gmbh.ch/cpp/common/base64.html */
-static const std::string base64_chars =
-  "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-  "abcdefghijklmnopqrstuvwxyz"
-  "0123456789+/";
-
+static const std::string base64_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                                        "abcdefghijklmnopqrstuvwxyz"
+                                        "0123456789+/";
 
 static inline bool is_base64(unsigned char c) {
   return (isalnum(c) || (c == '+') || (c == '/'));
@@ -806,7 +883,8 @@ static inline bool is_base64(unsigned char c) {
 
 /* **************************************************** */
 
-char* Utils::base64_encode(unsigned char const* bytes_to_encode, ssize_t in_len) {
+char *Utils::base64_encode(unsigned char const *bytes_to_encode,
+                           ssize_t in_len) {
   char *res = NULL;
   ssize_t res_len = 0;
   std::string ret;
@@ -816,35 +894,39 @@ char* Utils::base64_encode(unsigned char const* bytes_to_encode, ssize_t in_len)
 
   while (in_len--) {
     char_array_3[i++] = *(bytes_to_encode++);
-    if(i == 3) {
+    if (i == 3) {
       char_array_4[0] = (char_array_3[0] & 0xfc) >> 2;
-      char_array_4[1] = ((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4);
-      char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6);
+      char_array_4[1] =
+          ((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4);
+      char_array_4[2] =
+          ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6);
       char_array_4[3] = char_array_3[2] & 0x3f;
 
-      for(i = 0; (i <4) ; i++)
+      for (i = 0; (i < 4); i++)
         ret += base64_chars[char_array_4[i]];
       i = 0;
     }
   }
 
-  if(i) {
-    for(int j = i; j < 3; j++)
+  if (i) {
+    for (int j = i; j < 3; j++)
       char_array_3[j] = '\0';
 
     char_array_4[0] = (char_array_3[0] & 0xfc) >> 2;
-    char_array_4[1] = ((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4);
-    char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6);
+    char_array_4[1] =
+        ((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4);
+    char_array_4[2] =
+        ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6);
     char_array_4[3] = char_array_3[2] & 0x3f;
 
-    for(int j = 0; (j < i + 1); j++)
+    for (int j = 0; (j < i + 1); j++)
       ret += base64_chars[char_array_4[j]];
 
-    while((i++ < 3))
+    while ((i++ < 3))
       ret += '=';
   }
 
-  if((res = (char*)calloc(sizeof(char), ret.size() + 1))) {
+  if ((res = (char *)calloc(sizeof(char), ret.size() + 1))) {
     res_len = ret.copy(res, ret.size());
     res[res_len] = '\0';
   }
@@ -854,43 +936,49 @@ char* Utils::base64_encode(unsigned char const* bytes_to_encode, ssize_t in_len)
 
 /* **************************************************** */
 
-std::string Utils::base64_decode(std::string const& encoded_string) {
+std::string Utils::base64_decode(std::string const &encoded_string) {
   int in_len = encoded_string.size();
   int i = 0, in_ = 0;
   unsigned char char_array_4[4], char_array_3[3];
   std::string ret;
 
-  while (in_len-- && ( encoded_string[in_] != '=') && is_base64(encoded_string[in_])) {
-    char_array_4[i++] = encoded_string[in_]; in_++;
+  while (in_len-- && (encoded_string[in_] != '=') &&
+         is_base64(encoded_string[in_])) {
+    char_array_4[i++] = encoded_string[in_];
+    in_++;
 
-    if(i == 4) {
-      for(i = 0; i <4; i++)
+    if (i == 4) {
+      for (i = 0; i < 4; i++)
         char_array_4[i] = base64_chars.find(char_array_4[i]);
 
-      char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
-      char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
+      char_array_3[0] =
+          (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
+      char_array_3[1] =
+          ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
       char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
 
-      for(i = 0; (i < 3); i++)
+      for (i = 0; (i < 3); i++)
         ret += char_array_3[i];
       i = 0;
     }
   }
 
-  if(i) {
+  if (i) {
     int j;
 
-    for(j = i; j <4; j++)
+    for (j = i; j < 4; j++)
       char_array_4[j] = 0;
 
-    for(j = 0; j <4; j++)
+    for (j = 0; j < 4; j++)
       char_array_4[j] = base64_chars.find(char_array_4[j]);
 
     char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
-    char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
+    char_array_3[1] =
+        ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
     char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
 
-    for(j = 0; (j < i - 1); j++) ret += char_array_3[j];
+    for (j = 0; (j < i - 1); j++)
+      ret += char_array_3[j];
   }
 
   return ret;
@@ -901,21 +989,21 @@ std::string Utils::base64_decode(std::string const& encoded_string) {
 double Utils::pearsonValueCorrelation(activity_bitmap *x, activity_bitmap *y) {
   double ex = 0, ey = 0, sxx = 0, syy = 0, sxy = 0, tiny_value = 1e-2;
 
-  for(size_t i = 0; i < NUM_MINUTES_PER_DAY; i++) {
+  for (size_t i = 0; i < NUM_MINUTES_PER_DAY; i++) {
     /* Find the means */
     ex += x->counter[i], ey += y->counter[i];
   }
 
   ex /= NUM_MINUTES_PER_DAY, ey /= NUM_MINUTES_PER_DAY;
 
-  for(size_t i = 0; i < NUM_MINUTES_PER_DAY; i++) {
+  for (size_t i = 0; i < NUM_MINUTES_PER_DAY; i++) {
     /* Compute the correlation coefficient */
     double xt = x->counter[i] - ex, yt = y->counter[i] - ey;
 
     sxx += xt * xt, syy += yt * yt, sxy += xt * yt;
   }
 
-  return (sxy/(sqrt(sxx*syy)+tiny_value));
+  return (sxy / (sqrt(sxx * syy) + tiny_value));
 }
 
 /* *************************************** */
@@ -923,46 +1011,46 @@ double Utils::pearsonValueCorrelation(activity_bitmap *x, activity_bitmap *y) {
 double Utils::JaccardSimilarity(activity_bitmap *x, activity_bitmap *y) {
   size_t inter_card = 0, union_card = 0;
 
-  for(size_t i = 0; i < NUM_MINUTES_PER_DAY; i++) {
+  for (size_t i = 0; i < NUM_MINUTES_PER_DAY; i++) {
     union_card += x->counter[i] | y->counter[i];
     inter_card += x->counter[i] & y->counter[i];
   }
 
-  if(union_card == 0)
-    return(1e-2);
+  if (union_card == 0)
+    return (1e-2);
 
-  return ((double)inter_card/union_card);
+  return ((double)inter_card / union_card);
 }
 
 /* *************************************** */
 
 #ifdef WIN32
 extern "C" {
-  const char *strcasestr(const char *haystack, const char *needle) {
-    int i = -1;
+const char *strcasestr(const char *haystack, const char *needle) {
+  int i = -1;
 
-    while (haystack[++i] != '\0') {
-      if(tolower(haystack[i]) == tolower(needle[0])) {
-	int j = i, k = 0, match = 0;
-	while (tolower(haystack[++j]) == tolower(needle[++k])) {
-	  match = 1;
-	  // Catch case when they match at the end
-	  //printf("j:%d, k:%d\n",j,k);
-	  if(haystack[j] == '\0' && needle[k] == '\0') {
-	    //printf("Mj:%d, k:%d\n",j,k);
-	    return &haystack[i];
-	  }
-	}
-	// Catch normal case
-	if(match && needle[k] == '\0'){
-	  // printf("Norm j:%d, k:%d\n",j,k);
-	  return &haystack[i];
-	}
+  while (haystack[++i] != '\0') {
+    if (tolower(haystack[i]) == tolower(needle[0])) {
+      int j = i, k = 0, match = 0;
+      while (tolower(haystack[++j]) == tolower(needle[++k])) {
+        match = 1;
+        // Catch case when they match at the end
+        // printf("j:%d, k:%d\n",j,k);
+        if (haystack[j] == '\0' && needle[k] == '\0') {
+          // printf("Mj:%d, k:%d\n",j,k);
+          return &haystack[i];
+        }
+      }
+      // Catch normal case
+      if (match && needle[k] == '\0') {
+        // printf("Norm j:%d, k:%d\n",j,k);
+        return &haystack[i];
       }
     }
-
-    return NULL;
   }
+
+  return NULL;
+}
 };
 #endif
 
@@ -971,35 +1059,39 @@ extern "C" {
 int Utils::ifname2id(const char *name) {
   char rsp[MAX_INTERFACE_NAME_LEN], ifidx[8];
 
-  if(name && !strcmp(name, SYSTEM_INTERFACE_NAME))
+  if (name && !strcmp(name, SYSTEM_INTERFACE_NAME))
     return SYSTEM_INTERFACE_ID;
 
-  if(name == NULL)
+  if (name == NULL)
     return INVALID_INTERFACE_ID;
 
 #ifdef WIN32
-  else if(isdigit(name[0]))
-      return(atoi(name));
+  else if (isdigit(name[0]))
+    return (atoi(name));
 #endif
-  else if(!strncmp(name, "-", 1))
-      name = (char*) "stdin";
+  else if (!strncmp(name, "-", 1))
+    name = (char *)"stdin";
 
-  if(ntop->getRedis()) {
-    if(ntop->getRedis()->hashGet((char*)CONST_IFACE_ID_PREFS, (char*)name, rsp, sizeof(rsp)) == 0) {
+  if (ntop->getRedis()) {
+    if (ntop->getRedis()->hashGet((char *)CONST_IFACE_ID_PREFS, (char *)name,
+                                  rsp, sizeof(rsp)) == 0) {
       /* Found */
-      return(atoi(rsp));
+      return (atoi(rsp));
     } else {
-      for(int i = 0; i < MAX_NUM_INTERFACE_IDS; i++) {
-	snprintf(ifidx, sizeof(ifidx), "%d", i);
-	if(ntop->getRedis()->hashGet((char*)CONST_IFACE_ID_PREFS, ifidx, rsp, sizeof(rsp)) < 0) {
-	  snprintf(rsp, sizeof(rsp), "%s", name);
-	  ntop->getRedis()->hashSet((char*)CONST_IFACE_ID_PREFS, rsp, ifidx);
-	  ntop->getRedis()->hashSet((char*)CONST_IFACE_ID_PREFS, ifidx, rsp);
-	  return(i);
-	}
+      for (int i = 0; i < MAX_NUM_INTERFACE_IDS; i++) {
+        snprintf(ifidx, sizeof(ifidx), "%d", i);
+        if (ntop->getRedis()->hashGet((char *)CONST_IFACE_ID_PREFS, ifidx, rsp,
+                                      sizeof(rsp)) < 0) {
+          snprintf(rsp, sizeof(rsp), "%s", name);
+          ntop->getRedis()->hashSet((char *)CONST_IFACE_ID_PREFS, rsp, ifidx);
+          ntop->getRedis()->hashSet((char *)CONST_IFACE_ID_PREFS, ifidx, rsp);
+          return (i);
+        }
       }
 
-      ntop->getTrace()->traceEvent(TRACE_ERROR, "Interface ids exhausted. Flush redis to create new interfaces.");
+      ntop->getTrace()->traceEvent(
+          TRACE_ERROR,
+          "Interface ids exhausted. Flush redis to create new interfaces.");
     }
   }
 
@@ -1008,7 +1100,7 @@ int Utils::ifname2id(const char *name) {
 
 /* **************************************************** */
 
-char* Utils::stringtolower(char *str) {
+char *Utils::stringtolower(char *str) {
   int i = 0;
 
   while (str[i] != '\0') {
@@ -1023,47 +1115,48 @@ char* Utils::stringtolower(char *str) {
 
 /* http://en.wikipedia.org/wiki/Hostname */
 
-char* Utils::sanitizeHostName(char *str) {
+char *Utils::sanitizeHostName(char *str) {
   int i;
 
-  for(i=0; str[i] != '\0'; i++) {
-    if(((str[i] >= 'a') && (str[i] <= 'z'))
-       || ((str[i] >= 'A') && (str[i] <= 'Z'))
-       || ((str[i] >= '0') && (str[i] <= '9'))
-       || (str[i] == '-')
-       || (str[i] == '_')
-       || (str[i] == '.')
-       || (str[i] == ':') /* Used in HTTP host:port */
-       || (str[i] == '@') /* Used by DNS but not a valid char */)
+  for (i = 0; str[i] != '\0'; i++) {
+    if (((str[i] >= 'a') && (str[i] <= 'z')) ||
+        ((str[i] >= 'A') && (str[i] <= 'Z')) ||
+        ((str[i] >= '0') && (str[i] <= '9')) || (str[i] == '-') ||
+        (str[i] == '_') || (str[i] == '.') ||
+        (str[i] == ':') /* Used in HTTP host:port */
+        || (str[i] == '@') /* Used by DNS but not a valid char */)
       ;
-    else if(str[i] == '_') {
+    else if (str[i] == '_') {
       str[i] = '\0';
       break;
     } else
       str[i] = '_';
   }
 
-  return(str);
+  return (str);
 }
 
 /* **************************************************** */
 
-char* Utils::stripHTML(const char * str) {
-  if(!str) return NULL;
+char *Utils::stripHTML(const char *str) {
+  if (!str)
+    return NULL;
   int len = strlen(str), j = 0;
   char *stripped_str = NULL;
 
-  stripped_str = (char *) malloc(len + 1);
+  stripped_str = (char *)malloc(len + 1);
 
-  if(!stripped_str)
-    return(NULL);
+  if (!stripped_str)
+    return (NULL);
 
   // scan string
   for (int i = 0; i < len; i++) {
     // found an open '<', scan for its close
-    if(str[i] == '<') {
-      // charge ahead in the string until it runs out or we find what we're looking for
-      for (; i < len && str[i] != '>'; i++);
+    if (str[i] == '<') {
+      // charge ahead in the string until it runs out or we find what we're
+      // looking for
+      for (; i < len && str[i] != '>'; i++)
+        ;
     } else {
       stripped_str[j] = str[i];
       j++;
@@ -1075,28 +1168,28 @@ char* Utils::stripHTML(const char * str) {
 
 /* **************************************************** */
 
-char* Utils::urlDecode(const char *src, char *dst, u_int dst_len) {
+char *Utils::urlDecode(const char *src, char *dst, u_int dst_len) {
   char *ret = dst;
   u_int i = 0;
 
   dst_len--; /* Leave room for \0 */
   dst[dst_len] = 0;
 
-  while((*src) && (i < dst_len)) {
+  while ((*src) && (i < dst_len)) {
     char a, b;
 
-    if((*src == '%') &&
-       ((a = src[1]) && (b = src[2]))
-       && (isxdigit(a) && isxdigit(b))) {
-      char h[3] = { a, b, 0 };
+    if ((*src == '%') && ((a = src[1]) && (b = src[2])) &&
+        (isxdigit(a) && isxdigit(b))) {
+      char h[3] = {a, b, 0};
       char hexval = (char)strtol(h, (char **)NULL, 16);
 
       //      if(iswprint(hexval))
       *dst++ = hexval;
 
       src += 3;
-    } else if(*src == '+') {
-      *dst++ = ' '; src++;
+    } else if (*src == '+') {
+      *dst++ = ' ';
+      src++;
     } else
       *dst++ = *src++;
 
@@ -1104,7 +1197,7 @@ char* Utils::urlDecode(const char *src, char *dst, u_int dst_len) {
   }
 
   *dst++ = '\0';
-  return(ret);
+  return (ret);
 }
 
 /* **************************************************** */
@@ -1115,120 +1208,102 @@ char* Utils::urlDecode(const char *src, char *dst, u_int dst_len) {
  * @param param   The parameter to purify (remove unliked chars with _)
  */
 
-static const char* xssAttempts[] = {
-				    "<?import",
-				    "<applet",
-				    "<base",
-				    "<embed",
-				    "<frame",
-				    "<iframe",
-				    "<implementation",
-				    "<import",
-				    "<link",
-				    "<meta",
-				    "<object",
-				    "<script",
-				    "<style",
-				    "charset",
-				    "classid",
-				    "code",
-				    "codetype",
-				    /* "data", */
-				    "href",
-				    "http-equiv",
-				    "javascript:",
-				    "vbscript:",
-				    "vmlframe",
-				    "xlink:href",
-				    "=",
-				    NULL
-};
+static const char *xssAttempts[] = {
+    "<?import", "<applet", "<base", "<embed", "<frame", "<iframe",
+    "<implementation", "<import", "<link", "<meta", "<object", "<script",
+    "<style", "charset", "classid", "code", "codetype",
+    /* "data", */
+    "href", "http-equiv", "javascript:", "vbscript:", "vmlframe", "xlink:href",
+    "=", NULL};
 
 /* ************************************************************ */
 
 /* http://www.ascii-code.com */
 
 bool Utils::isPrintableChar(u_char c) {
-  if(isprint(c)) return(true);
+  if (isprint(c))
+    return (true);
 
-  if((c >= 192) && (c <= 255))
-    return(true);
+  if ((c >= 192) && (c <= 255))
+    return (true);
 
-  return(false);
+  return (false);
 }
 
 /* ************************************************************ */
 
-bool Utils::purifyHTTPparam(char * const param, bool strict, bool allowURL, bool allowDots) {
-  if(strict) {
-    for(int i=0; xssAttempts[i] != NULL; i++) {
-      if(strstr(param, xssAttempts[i])) {
-	ntop->getTrace()->traceEvent(TRACE_WARNING, "Found possible XSS attempt: %s [%s]", param, xssAttempts[i]);
-	param[0] = '\0';
-	return(true);
+bool Utils::purifyHTTPparam(char *const param, bool strict, bool allowURL,
+                            bool allowDots) {
+  if (strict) {
+    for (int i = 0; xssAttempts[i] != NULL; i++) {
+      if (strstr(param, xssAttempts[i])) {
+        ntop->getTrace()->traceEvent(TRACE_WARNING,
+                                     "Found possible XSS attempt: %s [%s]",
+                                     param, xssAttempts[i]);
+        param[0] = '\0';
+        return (true);
       }
     }
   }
 
-  for(int i=0; param[i] != '\0'; i++) {
+  for (int i = 0; param[i] != '\0'; i++) {
     bool is_good;
 
-    if(strict) {
-      is_good =
-        ((param[i] >= 'a') && (param[i] <= 'z'))
-	|| ((param[i] >= 'A') && (param[i] <= 'Z'))
-	|| ((param[i] >= '0') && (param[i] <= '9'))
-	// || (param[i] == ':')
-	// || (param[i] == '-')
-	|| (param[i] == '_')
-	// || (param[i] == '/')
-	|| (param[i] == '@')
-	// || (param[i] == ',')
-	// || (param[i] == '.')
-	;
+    if (strict) {
+      is_good = ((param[i] >= 'a') && (param[i] <= 'z')) ||
+                ((param[i] >= 'A') && (param[i] <= 'Z')) ||
+                ((param[i] >= '0') && (param[i] <= '9'))
+                // || (param[i] == ':')
+                // || (param[i] == '-')
+                || (param[i] == '_')
+                // || (param[i] == '/')
+                || (param[i] == '@')
+          // || (param[i] == ',')
+          // || (param[i] == '.')
+          ;
     } else {
       char c;
       int new_i;
 
-      if((u_char)param[i] == 0xC3) {
+      if ((u_char)param[i] == 0xC3) {
         /* Latin-1 within UTF-8 - Align to ASCII encoding */
-        c = param[i+1] | 0x40;
-        new_i = i+1; /* We are actually validating two bytes */
+        c = param[i + 1] | 0x40;
+        new_i = i + 1; /* We are actually validating two bytes */
       } else {
         c = param[i];
         new_i = i;
       }
 
-      is_good = Utils::isPrintableChar(c)
-        && (c != '<')
-        && (c != '>')
-        && (c != '"'); /* Prevents injections - single quotes are allowed and will be validated in http_lint.lua */
+      is_good = Utils::isPrintableChar(c) && (c != '<') && (c != '>') &&
+                (c != '"'); /* Prevents injections - single quotes are allowed
+                               and will be validated in http_lint.lua */
 
-      if(is_good)
+      if (is_good)
         i = new_i;
     }
 
-    if(is_good)
+    if (is_good)
       ; /* Good: we're on the whitelist */
     else
       param[i] = '_'; /* Invalid char: we discard it */
 
-    if((i > 0)
-       && (((!allowDots) && (param[i] == '.') && (param[i-1] == '.'))
-	   || ((!allowURL) && ((param[i] == '/') && (param[i-1] == '/')))
-	   || ((param[i] == '\\') && (param[i-1] == '\\'))
-	   )) {
-      /* Make sure we do not have .. in the variable that can be used for future hacking */
-      param[i-1] = '_', param[i] = '_'; /* Invalidate the path */
+    if ((i > 0) &&
+        (((!allowDots) && (param[i] == '.') && (param[i - 1] == '.')) ||
+         ((!allowURL) && ((param[i] == '/') && (param[i - 1] == '/'))) ||
+         ((param[i] == '\\') && (param[i - 1] == '\\')))) {
+      /* Make sure we do not have .. in the variable that can be used for future
+       * hacking */
+      param[i - 1] = '_', param[i] = '_'; /* Invalidate the path */
     }
   }
 
-  return(false);
+  return (false);
 }
 
 /* ************************************************************ */
 
-bool Utils::sendTCPData(char *host, int port, char *data, int timeout /* msec */) {
+bool Utils::sendTCPData(char *host, int port, char *data,
+                        int timeout /* msec */) {
   struct hostent *server = NULL;
   struct sockaddr_in serv_addr;
   int sockfd = -1;
@@ -1236,58 +1311,63 @@ bool Utils::sendTCPData(char *host, int port, char *data, int timeout /* msec */
   bool rc = false;
 
   server = gethostbyname(host);
-  if(server == NULL)
+  if (server == NULL)
     return false;
 
-  memset((char*)&serv_addr, 0, sizeof(serv_addr));
+  memset((char *)&serv_addr, 0, sizeof(serv_addr));
   serv_addr.sin_family = AF_INET;
-  memcpy((char*)&serv_addr.sin_addr.s_addr, (char*)server->h_addr, server->h_length);
+  memcpy((char *)&serv_addr.sin_addr.s_addr, (char *)server->h_addr,
+         server->h_length);
   serv_addr.sin_port = htons(port);
 
   sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
-  if(sockfd < 0) {
+  if (sockfd < 0) {
     ntop->getTrace()->traceEvent(TRACE_WARNING, "Unable to create socket");
     return false;
   }
 
 #ifndef WIN32
-  if(timeout == 0) {
-    retval = fcntl(sockfd, F_SETFL, fcntl(sockfd,F_GETFL,0) | O_NONBLOCK);
-    if(retval == -1) {
-      ntop->getTrace()->traceEvent(TRACE_WARNING, "Error setting NONBLOCK flag");
+  if (timeout == 0) {
+    retval = fcntl(sockfd, F_SETFL, fcntl(sockfd, F_GETFL, 0) | O_NONBLOCK);
+    if (retval == -1) {
+      ntop->getTrace()->traceEvent(TRACE_WARNING,
+                                   "Error setting NONBLOCK flag");
       closesocket(sockfd);
       return false;
     }
   } else {
     struct timeval tv_timeout;
-    tv_timeout.tv_sec  = timeout/1000;
-    tv_timeout.tv_usec = (timeout%1000)*1000;
-    retval = setsockopt(sockfd, SOL_SOCKET, SO_SNDTIMEO, &tv_timeout, sizeof(tv_timeout));
-    if(retval == -1) {
-      ntop->getTrace()->traceEvent(TRACE_WARNING, "Error setting send timeout: %s", strerror(errno));
+    tv_timeout.tv_sec = timeout / 1000;
+    tv_timeout.tv_usec = (timeout % 1000) * 1000;
+    retval = setsockopt(sockfd, SOL_SOCKET, SO_SNDTIMEO, &tv_timeout,
+                        sizeof(tv_timeout));
+    if (retval == -1) {
+      ntop->getTrace()->traceEvent(
+          TRACE_WARNING, "Error setting send timeout: %s", strerror(errno));
       closesocket(sockfd);
       return false;
     }
   }
 #endif
 
-  if(connect(sockfd,(struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0
-     && (errno == ECONNREFUSED || errno == EALREADY || errno == EAGAIN ||
-	 errno == ENETUNREACH  || errno == ETIMEDOUT )) {
-    ntop->getTrace()->traceEvent(TRACE_WARNING,"Could not connect to remote party");
+  if (connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0 &&
+      (errno == ECONNREFUSED || errno == EALREADY || errno == EAGAIN ||
+       errno == ENETUNREACH || errno == ETIMEDOUT)) {
+    ntop->getTrace()->traceEvent(TRACE_WARNING,
+                                 "Could not connect to remote party");
     closesocket(sockfd);
     return false;
   }
 
-  //ntop->getTrace()->traceEvent(TRACE_NORMAL, "Sending '%s' to %s:%d",
-  //  data, host, port);
+  // ntop->getTrace()->traceEvent(TRACE_NORMAL, "Sending '%s' to %s:%d",
+  //   data, host, port);
 
   rc = true;
   retval = send(sockfd, data, strlen(data), 0);
-  if(retval <= 0) {
+  if (retval <= 0) {
     ntop->getTrace()->traceEvent(TRACE_WARNING, "Send failed: %s (%d)",
-      strerror(errno), errno);
+                                 strerror(errno), errno);
     rc = false;
   }
 
@@ -1300,23 +1380,24 @@ bool Utils::sendTCPData(char *host, int port, char *data, int timeout /* msec */
 
 /* holder for curl fetch */
 struct curl_fetcher_t {
-  char * const payload;
+  char *const payload;
   size_t cur_size;
   const size_t max_size;
 };
 
-static size_t curl_get_writefunc(void *contents, size_t size, size_t nmemb, void *userp) {
+static size_t curl_get_writefunc(void *contents, size_t size, size_t nmemb,
+                                 void *userp) {
   size_t realsize = size * nmemb;
-  struct curl_fetcher_t *p = (struct curl_fetcher_t*)userp;
+  struct curl_fetcher_t *p = (struct curl_fetcher_t *)userp;
 
-  if(!p->max_size)
+  if (!p->max_size)
     return realsize;
 
   /* Leave the last position for a '\0' */
-  if(p->cur_size + realsize > p->max_size - 1)
+  if (p->cur_size + realsize > p->max_size - 1)
     realsize = p->max_size - p->cur_size - 1;
 
-  if(realsize) {
+  if (realsize) {
     memcpy(&(p->payload[p->cur_size]), contents, realsize);
     p->cur_size += realsize;
     p->payload[p->cur_size] = 0;
@@ -1337,11 +1418,12 @@ static size_t curl_get_writefunc(void *contents, size_t size, size_t nmemb, void
  * @return true if post was successful, false otherwise.
  */
 
-static int curl_post_writefunc(void *ptr, size_t size, size_t nmemb, void *stream) {
-  char *str = (char*)ptr;
+static int curl_post_writefunc(void *ptr, size_t size, size_t nmemb,
+                               void *stream) {
+  char *str = (char *)ptr;
 
   ntop->getTrace()->traceEvent(TRACE_INFO, "[JSON] %s", str);
-  return(size*nmemb);
+  return (size * nmemb);
 }
 
 /* **************************************** */
@@ -1354,10 +1436,10 @@ struct snmp_upload_status {
 };
 
 static int curl_debugfunc(CURL *handle, curl_infotype type, char *data,
-			  size_t size, void *userptr) {
+                          size_t size, void *userptr) {
   char dir = '\0';
 
-  switch(type) {
+  switch (type) {
   case CURLINFO_HEADER_IN:
   case CURLINFO_DATA_IN:
     dir = '<';
@@ -1370,35 +1452,37 @@ static int curl_debugfunc(CURL *handle, curl_infotype type, char *data,
     break;
   }
 
-  if(dir) {
+  if (dir) {
     char *msg = data;
 
-    while(*msg) {
+    while (*msg) {
       char *end = strchr(msg, '\n');
-      if(!end) break;
+      if (!end)
+        break;
 
       *end = '\0';
       ntop->getTrace()->traceEvent(TRACE_NORMAL, "[CURL] %c %s", dir, msg);
       *end = '\n';
-      msg = end+1;
+      msg = end + 1;
     }
   }
 
-  return(size);
+  return (size);
 }
 
 /* **************************************** */
 
-static size_t curl_smtp_payload_source(void *ptr, size_t size, size_t nmemb, void *userp) {
+static size_t curl_smtp_payload_source(void *ptr, size_t size, size_t nmemb,
+                                       void *userp) {
   struct snmp_upload_status *upload_ctx = (struct snmp_upload_status *)userp;
 
-  if((size == 0) || (nmemb == 0) || ((size*nmemb) < 1)) {
+  if ((size == 0) || (nmemb == 0) || ((size * nmemb) < 1)) {
     return 0;
   }
 
   char *eol = strstr(upload_ctx->lines, "\r\n");
 
-  if(eol) {
+  if (eol) {
     size_t len = min(size, (size_t)(eol - upload_ctx->lines + 2));
     memcpy(ptr, upload_ctx->lines, len);
     upload_ctx->lines += len;
@@ -1413,7 +1497,7 @@ static size_t curl_smtp_payload_source(void *ptr, size_t size, size_t nmemb, voi
 
 /* **************************************** */
 
-static void readCurlStats(CURL *curl, HTTPTranferStats *stats, lua_State* vm) {
+static void readCurlStats(CURL *curl, HTTPTranferStats *stats, lua_State *vm) {
   curl_easy_getinfo(curl, CURLINFO_NAMELOOKUP_TIME, &stats->namelookup);
   curl_easy_getinfo(curl, CURLINFO_CONNECT_TIME, &stats->connect);
   curl_easy_getinfo(curl, CURLINFO_APPCONNECT_TIME, &stats->appconnect);
@@ -1422,7 +1506,7 @@ static void readCurlStats(CURL *curl, HTTPTranferStats *stats, lua_State* vm) {
   curl_easy_getinfo(curl, CURLINFO_STARTTRANSFER_TIME, &stats->start);
   curl_easy_getinfo(curl, CURLINFO_TOTAL_TIME, &stats->total);
 
-  if(vm) {
+  if (vm) {
     lua_newtable(vm);
 
     lua_push_float_table_entry(vm, "NAMELOOKUP_TIME", stats->namelookup);
@@ -1438,21 +1522,22 @@ static void readCurlStats(CURL *curl, HTTPTranferStats *stats, lua_State* vm) {
     lua_settable(vm, -3);
   }
 
-  ntop->getTrace()->traceEvent(TRACE_INFO,
-			       "[NAMELOOKUP_TIME %.02f][CONNECT_TIME %.02f][APPCONNECT_TIME %.02f][PRETRANSFER_TIME %.02f]"
-			       "[REDIRECT_TIME %.02f][STARTTRANSFER_TIME %.02f][TOTAL_TIME %.02f]",
-			       stats->namelookup, stats->connect, stats->appconnect,
-			       stats->pretransfer,stats->redirect, stats->start,
-			       stats->total);
+  ntop->getTrace()->traceEvent(
+      TRACE_INFO,
+      "[NAMELOOKUP_TIME %.02f][CONNECT_TIME %.02f][APPCONNECT_TIME "
+      "%.02f][PRETRANSFER_TIME %.02f]"
+      "[REDIRECT_TIME %.02f][STARTTRANSFER_TIME %.02f][TOTAL_TIME %.02f]",
+      stats->namelookup, stats->connect, stats->appconnect, stats->pretransfer,
+      stats->redirect, stats->start, stats->total);
 }
 
 /* **************************************** */
 
 static void fillcURLProxy(CURL *curl) {
-  if(getenv("HTTP_PROXY")) {
+  if (getenv("HTTP_PROXY")) {
     char proxy[1024];
 
-    if(getenv("HTTP_PROXY_PORT"))
+    if (getenv("HTTP_PROXY_PORT"))
       sprintf(proxy, "%s:%s", getenv("HTTP_PROXY"), getenv("HTTP_PROXY_PORT"));
     else
       sprintf(proxy, "%s", getenv("HTTP_PROXY"));
@@ -1460,7 +1545,7 @@ static void fillcURLProxy(CURL *curl) {
     curl_easy_setopt(curl, CURLOPT_PROXY, proxy);
     curl_easy_setopt(curl, CURLOPT_PROXYTYPE, CURLPROXY_HTTP);
 
-    if(getenv("no_proxy")) {
+    if (getenv("no_proxy")) {
       char no_proxy[1024];
 
       sprintf(no_proxy, "%s", getenv("no_proxy"));
@@ -1472,58 +1557,59 @@ static void fillcURLProxy(CURL *curl) {
 /* **************************************** */
 
 bool Utils::postHTTPJsonData(char *username, char *password, char *url,
-			     char *json, int timeout, HTTPTranferStats *stats) {
+                             char *json, int timeout, HTTPTranferStats *stats) {
   CURL *curl;
   bool ret = false;
 
   curl = curl_easy_init();
-  if(curl) {
+  if (curl) {
     CURLcode res;
-    struct curl_slist* headers = NULL;
+    struct curl_slist *headers = NULL;
 
     fillcURLProxy(curl);
 
     memset(stats, 0, sizeof(HTTPTranferStats));
     curl_easy_setopt(curl, CURLOPT_URL, url);
 
-    if((username && (username[0] != '\0'))
-       || (password && (password[0] != '\0'))) {
+    if ((username && (username[0] != '\0')) ||
+        (password && (password[0] != '\0'))) {
       char auth[64];
 
-      snprintf(auth, sizeof(auth), "%s:%s",
-	       username ? username : "",
-	       password ? password : "");
+      snprintf(auth, sizeof(auth), "%s:%s", username ? username : "",
+               password ? password : "");
       curl_easy_setopt(curl, CURLOPT_USERPWD, auth);
       curl_easy_setopt(curl, CURLOPT_HTTPAUTH, (long)CURLAUTH_BASIC);
     }
 
-    if(!strncmp(url, "https", 5) && ntop->getPrefs()->do_insecure_tls()) {
+    if (!strncmp(url, "https", 5) && ntop->getPrefs()->do_insecure_tls()) {
       curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
       curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
     }
 
     curl_easy_setopt(curl, CURLOPT_POST, 1L);
     headers = curl_slist_append(headers, "Content-Type: application/json");
-    headers = curl_slist_append(headers, "Expect:"); // Disable 100-continue as it may cause issues (e.g. in InfluxDB)
+    headers = curl_slist_append(headers,
+                                "Expect:"); // Disable 100-continue as it may
+                                            // cause issues (e.g. in InfluxDB)
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
     curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json);
     curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, (long)strlen(json));
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_post_writefunc);
 
-    if(timeout) {
+    if (timeout) {
       curl_easy_setopt(curl, CURLOPT_TIMEOUT, timeout);
       curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, timeout);
 #ifdef CURLOPT_CONNECTTIMEOUT_MS
-      curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT_MS, timeout*1000);
+      curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT_MS, timeout * 1000);
 #endif
     }
 
     res = curl_easy_perform(curl);
 
-    if(res != CURLE_OK) {
+    if (res != CURLE_OK) {
       ntop->getTrace()->traceEvent(TRACE_WARNING,
-				   "Unable to post data to (%s): %s",
-				   url, curl_easy_strerror(res));
+                                   "Unable to post data to (%s): %s", url,
+                                   curl_easy_strerror(res));
     } else {
       long http_code = 0;
 
@@ -1532,10 +1618,12 @@ bool Utils::postHTTPJsonData(char *username, char *password, char *url,
 
       curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
       // Success if http_code is 2xx, failure otherwise
-      if(http_code >= 200 && http_code <= 299)
-	ret = true;
+      if (http_code >= 200 && http_code <= 299)
+        ret = true;
       else
-	ntop->getTrace()->traceEvent(TRACE_WARNING, "Unexpected HTTP response code received %u", http_code);
+        ntop->getTrace()->traceEvent(
+            TRACE_WARNING, "Unexpected HTTP response code received %u",
+            http_code);
     }
 
     /* always cleanup */
@@ -1544,71 +1632,72 @@ bool Utils::postHTTPJsonData(char *username, char *password, char *url,
   } else
     ntop->getTrace()->traceEvent(TRACE_WARNING, "Unable to initialize curl");
 
-  return(ret);
+  return (ret);
 }
 
 /* **************************************** */
 
 bool Utils::postHTTPJsonData(char *username, char *password, char *url,
                              char *json, int timeout, HTTPTranferStats *stats,
-                             char *return_data, int return_data_size, int *response_code) {
+                             char *return_data, int return_data_size,
+                             int *response_code) {
   CURL *curl;
   bool ret = false;
 
   curl = curl_easy_init();
 
-  if(curl) {
+  if (curl) {
     CURLcode res;
-    struct curl_slist* headers = NULL;
-    curl_fetcher_t fetcher = {
-			      /* .payload =  */ return_data,
-			      /* .cur_size = */ 0,
-			      /* .max_size = */ (size_t)return_data_size};
+    struct curl_slist *headers = NULL;
+    curl_fetcher_t fetcher = {/* .payload =  */ return_data,
+                              /* .cur_size = */ 0,
+                              /* .max_size = */ (size_t)return_data_size};
 
     fillcURLProxy(curl);
 
     memset(stats, 0, sizeof(HTTPTranferStats));
     curl_easy_setopt(curl, CURLOPT_URL, url);
 
-    if((username && (username[0] != '\0'))
-       || (password && (password[0] != '\0'))) {
+    if ((username && (username[0] != '\0')) ||
+        (password && (password[0] != '\0'))) {
       char auth[64];
 
-      snprintf(auth, sizeof(auth), "%s:%s",
-               username ? username : "",
+      snprintf(auth, sizeof(auth), "%s:%s", username ? username : "",
                password ? password : "");
       curl_easy_setopt(curl, CURLOPT_USERPWD, auth);
       curl_easy_setopt(curl, CURLOPT_HTTPAUTH, (long)CURLAUTH_BASIC);
     }
 
-    if(!strncmp(url, "https", 5) && ntop->getPrefs()->do_insecure_tls()) {
+    if (!strncmp(url, "https", 5) && ntop->getPrefs()->do_insecure_tls()) {
       curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
       curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
     }
 
     curl_easy_setopt(curl, CURLOPT_POST, 1L);
     headers = curl_slist_append(headers, "Content-Type: application/json");
-    headers = curl_slist_append(headers, "Expect:"); // Disable 100-continue as it may cause issues (e.g. in InfluxDB)
+    headers = curl_slist_append(headers,
+                                "Expect:"); // Disable 100-continue as it may
+                                            // cause issues (e.g. in InfluxDB)
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
     curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json);
     curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, (long)strlen(json));
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &fetcher);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_get_writefunc);
 
-    if(timeout) {
+    if (timeout) {
       curl_easy_setopt(curl, CURLOPT_TIMEOUT, timeout);
       curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, timeout);
 #ifdef CURLOPT_CONNECTTIMEOUT_MS
-      curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT_MS, timeout*1000);
+      curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT_MS, timeout * 1000);
 #endif
     }
 
     res = curl_easy_perform(curl);
 
-    if(res != CURLE_OK) {
+    if (res != CURLE_OK) {
       ntop->getTrace()->traceEvent(TRACE_WARNING,
-                                   "Unable to post data to (%s): %s",
-                                   url, curl_easy_strerror(res));
+                                   "Unable to post data to (%s): %s", url,
+                                   curl_easy_strerror(res));
     } else {
       long rc;
       ntop->getTrace()->traceEvent(TRACE_INFO, "Posted JSON to %s", url);
@@ -1623,62 +1712,66 @@ bool Utils::postHTTPJsonData(char *username, char *password, char *url,
     curl_easy_cleanup(curl);
   }
 
-  return(ret);
+  return (ret);
 }
 
 /* **************************************** */
 
-static size_t read_callback(void *ptr, size_t size, size_t nmemb, void *stream) {
-  return(fread(ptr, size, nmemb, (FILE*)stream));
+static size_t read_callback(void *ptr, size_t size, size_t nmemb,
+                            void *stream) {
+  return (fread(ptr, size, nmemb, (FILE *)stream));
 }
 
-bool Utils::postHTTPTextFile(lua_State* vm, char *username, char *password, char *url,
-			     char *path, int timeout, HTTPTranferStats *stats) {
+bool Utils::postHTTPTextFile(lua_State *vm, char *username, char *password,
+                             char *url, char *path, int timeout,
+                             HTTPTranferStats *stats) {
   CURL *curl;
   bool ret = true;
   struct stat buf;
   size_t file_len;
   FILE *fd;
 
-  if(stat(path, &buf) != 0)
-    return(false);
+  if (stat(path, &buf) != 0)
+    return (false);
 
-  if((fd = fopen(path, "rb")) == NULL)
-    return(false);
+  if ((fd = fopen(path, "rb")) == NULL)
+    return (false);
   else
     file_len = (size_t)buf.st_size;
 
   curl = curl_easy_init();
 
-  if(curl) {
+  if (curl) {
     CURLcode res;
     DownloadState *state = NULL;
-    struct curl_slist* headers = NULL;
+    struct curl_slist *headers = NULL;
 
     fillcURLProxy(curl);
 
     memset(stats, 0, sizeof(HTTPTranferStats));
     curl_easy_setopt(curl, CURLOPT_URL, url);
 
-    if((username && (username[0] != '\0'))
-       || (password && (password[0] != '\0'))) {
+    if ((username && (username[0] != '\0')) ||
+        (password && (password[0] != '\0'))) {
       char auth[64];
 
-      snprintf(auth, sizeof(auth), "%s:%s",
-	       username ? username : "",
-	       password ? password : "");
+      snprintf(auth, sizeof(auth), "%s:%s", username ? username : "",
+               password ? password : "");
       curl_easy_setopt(curl, CURLOPT_USERPWD, auth);
       curl_easy_setopt(curl, CURLOPT_HTTPAUTH, (long)CURLAUTH_BASIC);
     }
 
-    if(!strncmp(url, "https", 5) && ntop->getPrefs()->do_insecure_tls()) {
+    if (!strncmp(url, "https", 5) && ntop->getPrefs()->do_insecure_tls()) {
       curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
       curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
     }
 
     curl_easy_setopt(curl, CURLOPT_POST, 1L);
-    headers = curl_slist_append(headers, "Content-Type: text/plain; charset=utf-8");
-    headers = curl_slist_append(headers, "Expect:"); // Disable 100-continue as it may cause issues (e.g. in InfluxDB)
+    headers =
+        curl_slist_append(headers, "Content-Type: text/plain; charset=utf-8");
+    headers = curl_slist_append(headers,
+                                "Expect:"); // Disable 100-continue as it may
+                                            // cause issues (e.g. in InfluxDB)
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
 
     curl_easy_setopt(curl, CURLOPT_READDATA, fd);
@@ -1689,11 +1782,11 @@ bool Utils::postHTTPTextFile(lua_State* vm, char *username, char *password, char
     curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, timeout);
 
 #ifdef CURLOPT_CONNECTTIMEOUT_MS
-    curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT_MS, timeout*1000);
+    curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT_MS, timeout * 1000);
 #endif
 
-    state = (DownloadState*)malloc(sizeof(DownloadState));
-    if(state != NULL) {
+    state = (DownloadState *)malloc(sizeof(DownloadState));
+    if (state != NULL) {
       memset(state, 0, sizeof(DownloadState));
 
       curl_easy_setopt(curl, CURLOPT_WRITEDATA, state);
@@ -1705,35 +1798,38 @@ bool Utils::postHTTPTextFile(lua_State* vm, char *username, char *password, char
     } else {
       ntop->getTrace()->traceEvent(TRACE_WARNING, "Out of memory");
       curl_easy_cleanup(curl);
-      if(vm) lua_pushnil(vm);
-      return(false);
+      if (vm)
+        lua_pushnil(vm);
+      return (false);
     }
 
-    if(vm) lua_newtable(vm);
+    if (vm)
+      lua_newtable(vm);
 
     res = curl_easy_perform(curl);
 
-    if(res != CURLE_OK) {
+    if (res != CURLE_OK) {
       ntop->getTrace()->traceEvent(TRACE_INFO,
-				   "Unable to post data to (%s): %s",
-				   url, curl_easy_strerror(res));
+                                   "Unable to post data to (%s): %s", url,
+                                   curl_easy_strerror(res));
       lua_push_str_table_entry(vm, "error_msg", curl_easy_strerror(res));
       ret = false;
     } else {
       ntop->getTrace()->traceEvent(TRACE_INFO, "Posted JSON to %s", url);
       readCurlStats(curl, stats, NULL);
 
-      if(vm) {
+      if (vm) {
         long response_code;
         lua_push_str_table_entry(vm, "CONTENT", state->outbuf);
         lua_push_uint64_table_entry(vm, "CONTENT_LEN", state->num_bytes);
 
-        if(curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code) == CURLE_OK)
+        if (curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code) ==
+            CURLE_OK)
           lua_push_uint64_table_entry(vm, "RESPONSE_CODE", response_code);
       }
     }
 
-    if(state)
+    if (state)
       free(state);
 
     fclose(fd);
@@ -1743,13 +1839,14 @@ bool Utils::postHTTPTextFile(lua_State* vm, char *username, char *password, char
     curl_easy_cleanup(curl);
   }
 
-  return(ret);
+  return (ret);
 }
 
 /* **************************************** */
 
-bool Utils::sendMail(lua_State* vm, char *from, char *to, char *cc, char *message,
-		     char *smtp_server, char *username, char *password) {
+bool Utils::sendMail(lua_State *vm, char *from, char *to, char *cc,
+                     char *message, char *smtp_server, char *username,
+                     char *password) {
   bool ret = true;
   const char *ret_str = "";
 
@@ -1757,9 +1854,10 @@ bool Utils::sendMail(lua_State* vm, char *from, char *to, char *cc, char *messag
   CURL *curl;
   CURLcode res;
   struct curl_slist *recipients = NULL;
-  struct snmp_upload_status *upload_ctx = (struct snmp_upload_status*) calloc(1, sizeof(struct snmp_upload_status));
+  struct snmp_upload_status *upload_ctx =
+      (struct snmp_upload_status *)calloc(1, sizeof(struct snmp_upload_status));
 
-  if(!upload_ctx) {
+  if (!upload_ctx) {
     ret = false;
     goto out;
   }
@@ -1767,24 +1865,24 @@ bool Utils::sendMail(lua_State* vm, char *from, char *to, char *cc, char *messag
   upload_ctx->lines = message;
   curl = curl_easy_init();
 
-  if(curl) {
+  if (curl) {
     fillcURLProxy(curl);
 
-    if(username != NULL && password != NULL) {
+    if (username != NULL && password != NULL) {
       curl_easy_setopt(curl, CURLOPT_USERNAME, username);
       curl_easy_setopt(curl, CURLOPT_PASSWORD, password);
     }
 
     curl_easy_setopt(curl, CURLOPT_URL, smtp_server);
 
-    if(strncmp(smtp_server, "smtps://", 8) == 0)
+    if (strncmp(smtp_server, "smtps://", 8) == 0)
       curl_easy_setopt(curl, CURLOPT_USE_SSL, CURLUSESSL_ALL);
-    else if(strncmp(smtp_server, "smtp://", 7) == 0)
+    else if (strncmp(smtp_server, "smtp://", 7) == 0)
       curl_easy_setopt(curl, CURLOPT_USE_SSL, CURLUSESSL_NONE);
     else /* Try using SSL */
       curl_easy_setopt(curl, CURLOPT_USE_SSL, CURLUSESSL_TRY);
 
-    if(ntop->getPrefs()->do_insecure_tls()) {
+    if (ntop->getPrefs()->do_insecure_tls()) {
       curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
       curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
     }
@@ -1792,7 +1890,7 @@ bool Utils::sendMail(lua_State* vm, char *from, char *to, char *cc, char *messag
     curl_easy_setopt(curl, CURLOPT_MAIL_FROM, from);
 
     recipients = curl_slist_append(recipients, to);
-    if(cc && cc[0])
+    if (cc && cc[0])
       recipients = curl_slist_append(recipients, cc);
     curl_easy_setopt(curl, CURLOPT_MAIL_RCPT, recipients);
 
@@ -1800,7 +1898,7 @@ bool Utils::sendMail(lua_State* vm, char *from, char *to, char *cc, char *messag
     curl_easy_setopt(curl, CURLOPT_READDATA, upload_ctx);
     curl_easy_setopt(curl, CURLOPT_UPLOAD, 1L);
 
-    if(ntop->getTrace()->get_trace_level() >= TRACE_LEVEL_DEBUG) {
+    if (ntop->getTrace()->get_trace_level() >= TRACE_LEVEL_DEBUG) {
       /* Show verbose message trace */
       curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
       curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, curl_debugfunc);
@@ -1810,10 +1908,11 @@ bool Utils::sendMail(lua_State* vm, char *from, char *to, char *cc, char *messag
     res = curl_easy_perform(curl);
     ret_str = curl_easy_strerror(res);
 
-    if(res != CURLE_OK) {
+    if (res != CURLE_OK) {
       ntop->getTrace()->traceEvent(TRACE_WARNING,
-				   "Unable to send email to (%s): %s. Run ntopng with -v6 for more details.",
-				   smtp_server, curl_easy_strerror(res));
+                                   "Unable to send email to (%s): %s. Run "
+                                   "ntopng with -v6 for more details.",
+                                   smtp_server, curl_easy_strerror(res));
       ret = false;
     }
 
@@ -1825,56 +1924,62 @@ bool Utils::sendMail(lua_State* vm, char *from, char *to, char *cc, char *messag
 
   free(upload_ctx);
 
- out:
+out:
 #else
   ret = false;
   ret_str = "SMTP support is not available";
 #endif
 
-  if(vm) {
+  if (vm) {
     /*
-    If a lua VM has been passed as parameter, return code and return message are pushed into the lua stack.
+    If a lua VM has been passed as parameter, return code and return message are
+    pushed into the lua stack.
     */
     lua_newtable(vm);
     lua_push_bool_table_entry(vm, "success", ret);
     lua_push_str_table_entry(vm, "msg", ret_str);
-  } else if(!ret)
+  } else if (!ret)
     /*
-      If not lua VM has been passed, in case of error, a message is logged to stdout
+      If not lua VM has been passed, in case of error, a message is logged to
+      stdout
      */
     ntop->getTrace()->traceEvent(TRACE_WARNING,
-				 "Unable to send email to (%s): %s. Run ntopng with -v6 for more details.",
-				 smtp_server, ret_str);
+                                 "Unable to send email to (%s): %s. Run ntopng "
+                                 "with -v6 for more details.",
+                                 smtp_server, ret_str);
   return ret;
 }
 
 /* **************************************** */
 
 /* curl calls this routine to get more data */
-static size_t curl_writefunc_to_lua(char *buffer, size_t size,
-				    size_t nitems, void *userp) {
-  DownloadState *state = (DownloadState*)userp;
-  int len = size*nitems, diff;
+static size_t curl_writefunc_to_lua(char *buffer, size_t size, size_t nitems,
+                                    void *userp) {
+  DownloadState *state = (DownloadState *)userp;
+  int len = size * nitems, diff;
 
-  if(state->header_over == 0) {
+  if (state->header_over == 0) {
     /* We need to parse the header as this is the first call for the body */
     char *tmp, *element;
 
     state->outbuf[state->num_bytes] = 0;
     element = strtok_r(state->outbuf, "\r\n", &tmp);
-    if(element) element = strtok_r(NULL, "\r\n", &tmp);
+    if (element)
+      element = strtok_r(NULL, "\r\n", &tmp);
 
     lua_newtable(state->vm);
 
-    while(element) {
+    while (element) {
       char *column = strchr(element, ':');
 
-      if(!column) break;
+      if (!column)
+        break;
 
       column[0] = '\0';
 
       /* Put everything in lowercase */
-      for(int i=0; element[i] != '\0'; i++) element[i] = tolower(element[i]);
+      for (int i = 0; element[i] != '\0'; i++)
+        element[i] = tolower(element[i]);
       lua_push_str_table_entry(state->vm, element, &column[1]);
 
       element = strtok_r(NULL, "\r\n", &tmp);
@@ -1887,26 +1992,27 @@ static size_t curl_writefunc_to_lua(char *buffer, size_t size,
     state->num_bytes = 0, state->header_over = 1;
   }
 
-  if(state->return_content) {
+  if (state->return_content) {
     diff = sizeof(state->outbuf) - state->num_bytes - 1;
 
-    if(diff > 0) {
+    if (diff > 0) {
       int buff_diff = min(diff, len);
 
-      if(buff_diff > 0) {
-	strncpy(&state->outbuf[state->num_bytes], buffer, buff_diff);
-	state->num_bytes += buff_diff;
-	state->outbuf[state->num_bytes] = '\0';
+      if (buff_diff > 0) {
+        strncpy(&state->outbuf[state->num_bytes], buffer, buff_diff);
+        state->num_bytes += buff_diff;
+        state->outbuf[state->num_bytes] = '\0';
       }
     }
   }
 
-  return(len);
+  return (len);
 }
 
 /* **************************************** */
 
-static size_t curl_writefunc_to_file(void *ptr, size_t size, size_t nmemb, void *stream) {
+static size_t curl_writefunc_to_file(void *ptr, size_t size, size_t nmemb,
+                                     void *stream) {
   size_t written = fwrite(ptr, size, nmemb, (FILE *)stream);
   return written;
 }
@@ -1915,21 +2021,21 @@ static size_t curl_writefunc_to_file(void *ptr, size_t size, size_t nmemb, void 
 
 /* Same as the above function but only for header */
 static size_t curl_hdf(char *buffer, size_t size, size_t nitems, void *userp) {
-  DownloadState *state = (DownloadState*)userp;
-  int len = size*nitems;
+  DownloadState *state = (DownloadState *)userp;
+  int len = size * nitems;
   int diff = sizeof(state->outbuf) - state->num_bytes - 1;
 
-  if(diff > 0) {
+  if (diff > 0) {
     int buff_diff = min(diff, len);
 
-    if(buff_diff > 0) {
+    if (buff_diff > 0) {
       strncpy(&state->outbuf[state->num_bytes], buffer, buff_diff);
       state->num_bytes += buff_diff;
       state->outbuf[state->num_bytes] = '\0';
     }
   }
 
-  return(len);
+  return (len);
 }
 
 /* **************************************** */
@@ -1938,46 +2044,49 @@ bool Utils::progressCanContinue(ProgressState *progressState) {
   struct mg_connection *conn;
   time_t now = time(0);
 
-  if(progressState->vm &&
-     ((now - progressState->last_conn_check) >= 1) &&
-     (conn = getLuaVMUserdata(progressState->vm, conn))) {
+  if (progressState->vm && ((now - progressState->last_conn_check) >= 1) &&
+      (conn = getLuaVMUserdata(progressState->vm, conn))) {
     progressState->last_conn_check = now;
 
-    if(!mg_is_client_connected(conn))
+    if (!mg_is_client_connected(conn))
       /* connection to the client was closed, should not continue */
-      return(false);
+      return (false);
   }
 
-  return(true);
+  return (true);
 }
 
 /* **************************************** */
 
-static int progress_callback(void *clientp, double dltotal, double dlnow, double ultotal, double ulnow) {
-  ProgressState *progressState = (ProgressState*) clientp;
+static int progress_callback(void *clientp, double dltotal, double dlnow,
+                             double ultotal, double ulnow) {
+  ProgressState *progressState = (ProgressState *)clientp;
 
-  progressState->bytes.download = (u_int32_t)dlnow,  progressState->bytes.upload = (u_int32_t)ulnow;
+  progressState->bytes.download = (u_int32_t)dlnow,
+  progressState->bytes.upload = (u_int32_t)ulnow;
 
-  return Utils::progressCanContinue(progressState) ? 0 /* continue */ : 1 /* stop transfer */;
+  return Utils::progressCanContinue(progressState) ? 0 /* continue */
+                                                   : 1 /* stop transfer */;
 }
 
 /* **************************************** */
 
 /* form_data is in format param=value&param1=&value1... */
-bool Utils::httpGetPost(lua_State* vm, char *url,
-			/* NOTE if user_header_token != NULL, username AND password are ignored, and vice-versa */
-			char *username, char *password, char *user_header_token,
-			int timeout, bool return_content,
-			bool use_cookie_authentication,
-			HTTPTranferStats *stats, const char *form_data,
-			char *write_fname, bool follow_redirects, int ip_version) {
+bool Utils::httpGetPost(lua_State *vm, char *url,
+                        /* NOTE if user_header_token != NULL, username AND
+                           password are ignored, and vice-versa */
+                        char *username, char *password, char *user_header_token,
+                        int timeout, bool return_content,
+                        bool use_cookie_authentication, HTTPTranferStats *stats,
+                        const char *form_data, char *write_fname,
+                        bool follow_redirects, int ip_version) {
   CURL *curl = curl_easy_init();
   FILE *out_f = NULL;
   bool ret = true;
   char tokenBuffer[64];
   bool used_tokenBuffer = false;
 
-  if(curl) {
+  if (curl) {
     DownloadState *state = NULL;
     ProgressState progressState;
     CURLcode curlcode;
@@ -1991,33 +2100,31 @@ bool Utils::httpGetPost(lua_State* vm, char *url,
     memset(stats, 0, sizeof(HTTPTranferStats));
     curl_easy_setopt(curl, CURLOPT_URL, url);
 
-    if(user_header_token != NULL) {
-      snprintf(tokenBuffer, sizeof(tokenBuffer), "Authorization: Token %s", user_header_token);
+    if (user_header_token != NULL) {
+      snprintf(tokenBuffer, sizeof(tokenBuffer), "Authorization: Token %s",
+               user_header_token);
     } else {
       tokenBuffer[0] = '\0';
 
-      if(username || password) {
-	char auth[64];
+      if (username || password) {
+        char auth[64];
 
-	if(use_cookie_authentication) {
-	  snprintf(auth, sizeof(auth),
-		   "user=%s; password=%s",
-		   username ? username : "",
-		   password ? password : "");
-	  curl_easy_setopt(curl, CURLOPT_COOKIE, auth);
-	} else {
-	  if(username && (username[0] != '\0')) {
-	    snprintf(auth, sizeof(auth), "%s:%s",
-		     username ? username : "",
-		     password ? password : "");
-	    curl_easy_setopt(curl, CURLOPT_USERPWD, auth);
-	    curl_easy_setopt(curl, CURLOPT_HTTPAUTH, (long)CURLAUTH_BASIC);
-	  }
-	}
+        if (use_cookie_authentication) {
+          snprintf(auth, sizeof(auth), "user=%s; password=%s",
+                   username ? username : "", password ? password : "");
+          curl_easy_setopt(curl, CURLOPT_COOKIE, auth);
+        } else {
+          if (username && (username[0] != '\0')) {
+            snprintf(auth, sizeof(auth), "%s:%s", username ? username : "",
+                     password ? password : "");
+            curl_easy_setopt(curl, CURLOPT_USERPWD, auth);
+            curl_easy_setopt(curl, CURLOPT_HTTPAUTH, (long)CURLAUTH_BASIC);
+          }
+        }
       }
     }
 
-    if(!strncmp(url, "https", 5) && ntop->getPrefs()->do_insecure_tls()) {
+    if (!strncmp(url, "https", 5) && ntop->getPrefs()->do_insecure_tls()) {
       curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
       curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
 
@@ -2026,29 +2133,31 @@ bool Utils::httpGetPost(lua_State* vm, char *url,
 #endif
 
 #ifdef CURLOPT_SSL_ENABLE_NPN
-      curl_easy_setopt(curl, CURLOPT_SSL_ENABLE_NPN, 1L);  /* Negotiate HTTP/2 if available */
+      curl_easy_setopt(curl, CURLOPT_SSL_ENABLE_NPN,
+                       1L); /* Negotiate HTTP/2 if available */
 #endif
     }
 
-    if(form_data) {
+    if (form_data) {
       /* This is a POST request */
       curl_easy_setopt(curl, CURLOPT_POST, 1L);
       curl_easy_setopt(curl, CURLOPT_POSTFIELDS, form_data);
       curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, (long)strlen(form_data));
 
-      if(form_data[0] == '{' /* JSON */) {
+      if (form_data[0] == '{' /* JSON */) {
 
-	headers = curl_slist_append(headers, "Content-Type: application/json");
+        headers = curl_slist_append(headers, "Content-Type: application/json");
 
-	if(tokenBuffer[0] != '\0') {
-	  headers = curl_slist_append(headers, tokenBuffer);
-	  used_tokenBuffer = true;
-	}
+        if (tokenBuffer[0] != '\0') {
+          headers = curl_slist_append(headers, tokenBuffer);
+          used_tokenBuffer = true;
+        }
       }
     }
 
-    if((tokenBuffer[0] != '\0') && (!used_tokenBuffer)) {
-      snprintf(tokenBuffer, sizeof(tokenBuffer), "Authorization: Token %s", user_header_token);
+    if ((tokenBuffer[0] != '\0') && (!used_tokenBuffer)) {
+      snprintf(tokenBuffer, sizeof(tokenBuffer), "Authorization: Token %s",
+               user_header_token);
       headers = curl_slist_append(headers, tokenBuffer);
       used_tokenBuffer = true;
     }
@@ -2056,53 +2165,57 @@ bool Utils::httpGetPost(lua_State* vm, char *url,
     if (headers != NULL)
       curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
 
-    if(write_fname) {
+    if (write_fname) {
       ntop->fixPath(write_fname);
       out_f = fopen(write_fname, "wb");
 
-      if(out_f == NULL) {
-        ntop->getTrace()->traceEvent(TRACE_ERROR, "Could not open %s for write", write_fname, strerror(errno));
+      if (out_f == NULL) {
+        ntop->getTrace()->traceEvent(TRACE_ERROR, "Could not open %s for write",
+                                     write_fname, strerror(errno));
         curl_easy_cleanup(curl);
-        if(vm) lua_pushnil(vm);
-        return(false);
+        if (vm)
+          lua_pushnil(vm);
+        return (false);
       }
 
       curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_writefunc_to_file);
       curl_easy_setopt(curl, CURLOPT_WRITEDATA, out_f);
     } else {
-      state = (DownloadState*)malloc(sizeof(DownloadState));
-      if(state != NULL) {
-	memset(state, 0, sizeof(DownloadState));
+      state = (DownloadState *)malloc(sizeof(DownloadState));
+      if (state != NULL) {
+        memset(state, 0, sizeof(DownloadState));
 
-	curl_easy_setopt(curl, CURLOPT_WRITEDATA, state);
-	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_writefunc_to_lua);
-	curl_easy_setopt(curl, CURLOPT_HEADERDATA, state);
-	curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, curl_hdf);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, state);
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_writefunc_to_lua);
+        curl_easy_setopt(curl, CURLOPT_HEADERDATA, state);
+        curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, curl_hdf);
 
-	state->vm = vm, state->header_over = 0, state->return_content = return_content;
+        state->vm = vm, state->header_over = 0,
+        state->return_content = return_content;
       } else {
-	ntop->getTrace()->traceEvent(TRACE_WARNING, "Out of memory");
-	curl_easy_cleanup(curl);
-	if(vm) lua_pushnil(vm);
-	return(false);
+        ntop->getTrace()->traceEvent(TRACE_WARNING, "Out of memory");
+        curl_easy_cleanup(curl);
+        if (vm)
+          lua_pushnil(vm);
+        return (false);
       }
     }
 
-    if(follow_redirects) {
+    if (follow_redirects) {
       curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
       curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 5);
     }
 
-    if(ip_version == 4)
+    if (ip_version == 4)
       curl_easy_setopt(curl, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
-    else if(ip_version == 6)
+    else if (ip_version == 6)
       curl_easy_setopt(curl, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V6);
 
     curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
     curl_easy_setopt(curl, CURLOPT_TIMEOUT, timeout);
     curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, timeout);
 
-    if(!form_data) {
+    if (!form_data) {
       /* A GET request, track client connection status */
       memset(&progressState, 0, sizeof(progressState));
       progressState.vm = vm;
@@ -2112,60 +2225,68 @@ bool Utils::httpGetPost(lua_State* vm, char *url,
     }
 
 #ifdef CURLOPT_CONNECTTIMEOUT_MS
-    curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT_MS, timeout*1000);
+    curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT_MS, timeout * 1000);
 #endif
 
-    if(ntop->getTrace()->get_trace_level() > TRACE_LEVEL_NORMAL)
+    if (ntop->getTrace()->get_trace_level() > TRACE_LEVEL_NORMAL)
       curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
 
-    snprintf(ua, sizeof(ua), "%s/%s/%s", PACKAGE_STRING, PACKAGE_MACHINE, PACKAGE_OS);
+    snprintf(ua, sizeof(ua), "%s/%s/%s", PACKAGE_STRING, PACKAGE_MACHINE,
+             PACKAGE_OS);
     curl_easy_setopt(curl, CURLOPT_USERAGENT, ua);
     // curl_easy_setopt(curl, CURLOPT_USERAGENT, "libcurl/7.54.0");
 
-    if(vm) lua_newtable(vm);
+    if (vm)
+      lua_newtable(vm);
 
-    if((curlcode = curl_easy_perform(curl)) == CURLE_OK) {
+    if ((curlcode = curl_easy_perform(curl)) == CURLE_OK) {
       readCurlStats(curl, stats, vm);
 
-      if(return_content && vm) {
-	lua_push_str_table_entry(vm, "CONTENT", state->outbuf);
-	lua_push_uint64_table_entry(vm, "CONTENT_LEN", state->num_bytes);
+      if (return_content && vm) {
+        lua_push_str_table_entry(vm, "CONTENT", state->outbuf);
+        lua_push_uint64_table_entry(vm, "CONTENT_LEN", state->num_bytes);
       }
 
-      if(vm) {
-	char *ip = NULL;
+      if (vm) {
+        char *ip = NULL;
 
-	if(!curl_easy_getinfo(curl, CURLINFO_PRIMARY_IP, &ip) && ip)
-	  lua_push_str_table_entry(vm, "RESOLVED_IP", ip);
+        if (!curl_easy_getinfo(curl, CURLINFO_PRIMARY_IP, &ip) && ip)
+          lua_push_str_table_entry(vm, "RESOLVED_IP", ip);
       }
 
       ret = true;
     } else {
-      if(vm)
+      if (vm)
         lua_push_str_table_entry(vm, "ERROR", curl_easy_strerror(curlcode));
       ret = false;
     }
 
-    if(vm) {
-      if(curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code) == CURLE_OK)
-	lua_push_uint64_table_entry(vm, "RESPONSE_CODE", response_code);
+    if (vm) {
+      if (curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code) ==
+          CURLE_OK)
+        lua_push_uint64_table_entry(vm, "RESPONSE_CODE", response_code);
 
-      if((curl_easy_getinfo(curl, CURLINFO_CONTENT_TYPE, &content_type) == CURLE_OK) && content_type)
-	lua_push_str_table_entry(vm, "CONTENT_TYPE", content_type);
+      if ((curl_easy_getinfo(curl, CURLINFO_CONTENT_TYPE, &content_type) ==
+           CURLE_OK) &&
+          content_type)
+        lua_push_str_table_entry(vm, "CONTENT_TYPE", content_type);
 
-      if(curl_easy_getinfo(curl, CURLINFO_EFFECTIVE_URL, &redirection) == CURLE_OK)
-	lua_push_str_table_entry(vm, "EFFECTIVE_URL", redirection);
+      if (curl_easy_getinfo(curl, CURLINFO_EFFECTIVE_URL, &redirection) ==
+          CURLE_OK)
+        lua_push_str_table_entry(vm, "EFFECTIVE_URL", redirection);
 
-      if(!form_data) {
-	lua_push_uint64_table_entry(vm, "BYTES_DOWNLOAD", progressState.bytes.download);
-	lua_push_uint64_table_entry(vm, "BYTES_UPLOAD", progressState.bytes.upload);
+      if (!form_data) {
+        lua_push_uint64_table_entry(vm, "BYTES_DOWNLOAD",
+                                    progressState.bytes.download);
+        lua_push_uint64_table_entry(vm, "BYTES_UPLOAD",
+                                    progressState.bytes.upload);
       }
 
-      if(!ret)
-	lua_push_bool_table_entry(vm, "IS_PARTIAL", true);
+      if (!ret)
+        lua_push_bool_table_entry(vm, "IS_PARTIAL", true);
     }
 
-    if(state)
+    if (state)
       free(state);
 
     /* always cleanup */
@@ -2174,59 +2295,60 @@ bool Utils::httpGetPost(lua_State* vm, char *url,
     curl_easy_cleanup(curl);
   }
 
-  if(out_f)
+  if (out_f)
     fclose(out_f);
 
-  return(ret);
+  return (ret);
 }
 
 /* **************************************** */
 
-long Utils::httpGet(const char * url,
-		    /* NOTE if user_header_token != NULL, username AND password are ignored, and vice-versa */
-		    const char * username, const char * password, const char * user_header_token,
-		    int timeout, char * const resp, const u_int resp_len) {
+long Utils::httpGet(const char *url,
+                    /* NOTE if user_header_token != NULL, username AND password
+                       are ignored, and vice-versa */
+                    const char *username, const char *password,
+                    const char *user_header_token, int timeout,
+                    char *const resp, const u_int resp_len) {
   CURL *curl = curl_easy_init();
   long response_code = 0;
   char tokenBuffer[64];
 
-  if(curl) {
+  if (curl) {
     struct curl_slist *headers = NULL;
     char *content_type;
     char ua[64];
-    curl_fetcher_t fetcher = {
-			      /* .payload =  */ resp,
-			      /* .cur_size = */ 0,
-			      /* .max_size = */ resp_len};
+    curl_fetcher_t fetcher = {/* .payload =  */ resp,
+                              /* .cur_size = */ 0,
+                              /* .max_size = */ resp_len};
 
     fillcURLProxy(curl);
 
     curl_easy_setopt(curl, CURLOPT_URL, url);
 
-    if(user_header_token == NULL) {
-      if(username || password) {
-	char auth[64];
+    if (user_header_token == NULL) {
+      if (username || password) {
+        char auth[64];
 
-	snprintf(auth, sizeof(auth), "%s:%s",
-		 username ? username : "",
-		 password ? password : "");
-	curl_easy_setopt(curl, CURLOPT_USERPWD, auth);
-	curl_easy_setopt(curl, CURLOPT_HTTPAUTH, (long)CURLAUTH_BASIC);
+        snprintf(auth, sizeof(auth), "%s:%s", username ? username : "",
+                 password ? password : "");
+        curl_easy_setopt(curl, CURLOPT_USERPWD, auth);
+        curl_easy_setopt(curl, CURLOPT_HTTPAUTH, (long)CURLAUTH_BASIC);
       }
     } else {
-      snprintf(tokenBuffer, sizeof(tokenBuffer), "Authorization: Token %s", user_header_token);
+      snprintf(tokenBuffer, sizeof(tokenBuffer), "Authorization: Token %s",
+               user_header_token);
       headers = curl_slist_append(headers, tokenBuffer);
     }
 
     if (headers != NULL)
       curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
 
-    if(!strncmp(url, "https", 5) && ntop->getPrefs()->do_insecure_tls()) {
+    if (!strncmp(url, "https", 5) && ntop->getPrefs()->do_insecure_tls()) {
       curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
       curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
     }
 
-    if(resp && resp_len) {
+    if (resp && resp_len) {
       curl_easy_setopt(curl, CURLOPT_WRITEDATA, &fetcher);
       curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_get_writefunc);
     }
@@ -2238,17 +2360,19 @@ long Utils::httpGet(const char * url,
     curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, timeout);
 
 #ifdef CURLOPT_CONNECTTIMEOUT_MS
-    curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT_MS, timeout*1000);
+    curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT_MS, timeout * 1000);
 #endif
 
-    snprintf(ua, sizeof(ua), "%s [%s][%s]",
-	     PACKAGE_STRING, PACKAGE_MACHINE, PACKAGE_OS);
+    snprintf(ua, sizeof(ua), "%s [%s][%s]", PACKAGE_STRING, PACKAGE_MACHINE,
+             PACKAGE_OS);
     curl_easy_setopt(curl, CURLOPT_USERAGENT, ua);
 
-    if(curl_easy_perform(curl) == CURLE_OK) {
-      if((curl_easy_getinfo(curl, CURLINFO_CONTENT_TYPE, &content_type) != CURLE_OK)
-	 || (curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code) != CURLE_OK))
-	response_code = 0;
+    if (curl_easy_perform(curl) == CURLE_OK) {
+      if ((curl_easy_getinfo(curl, CURLINFO_CONTENT_TYPE, &content_type) !=
+           CURLE_OK) ||
+          (curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code) !=
+           CURLE_OK))
+        response_code = 0;
     }
 
     /* always cleanup */
@@ -2262,37 +2386,37 @@ long Utils::httpGet(const char * url,
 
 /* **************************************** */
 
-char* Utils::getURL(char *url, char *buf, u_int buf_len) {
+char *Utils::getURL(char *url, char *buf, u_int buf_len) {
   struct stat s;
 
-  if(!ntop->getPrefs()->is_pro_edition())
-    return(url);
+  if (!ntop->getPrefs()->is_pro_edition())
+    return (url);
 
   snprintf(buf, buf_len, "%s/lua/pro%s",
-	   ntop->get_HTTPserver()->get_scripts_dir(),
-	   &url[4]);
+           ntop->get_HTTPserver()->get_scripts_dir(), &url[4]);
 
   ntop->fixPath(buf);
-  if((stat(buf, &s) == 0) && (S_ISREG(s.st_mode))) {
+  if ((stat(buf, &s) == 0) && (S_ISREG(s.st_mode))) {
     u_int l = strlen(ntop->get_HTTPserver()->get_scripts_dir());
     char *new_url = &buf[l];
 
     // ntop->getTrace()->traceEvent(TRACE_NORMAL, "===>>> %s", new_url);
-    return(new_url);
+    return (new_url);
   } else
-    return(url);
+    return (url);
 }
 
 /* **************************************************** */
 
-/* URL encodes the given string. The caller must free the returned string after use. */
-char* Utils::urlEncode(const char *url) {
+/* URL encodes the given string. The caller must free the returned string after
+ * use. */
+char *Utils::urlEncode(const char *url) {
   CURL *curl;
 
-  if(url) {
+  if (url) {
     curl = curl_easy_init();
 
-    if(curl) {
+    if (curl) {
       char *escaped = curl_easy_escape(curl, url, strlen(url));
       char *output = strdup(escaped);
 
@@ -2312,12 +2436,11 @@ char* Utils::urlEncode(const char *url) {
 #ifdef NOTUSED
 static void newString(String *str) {
   str->l = 0;
-  str->s = (char *) malloc((str->l) + 1);
-  if(str->s == NULL) {
+  str->s = (char *)malloc((str->l) + 1);
+  if (str->s == NULL) {
     fprintf(stderr, "ERROR: malloc() failed!\n");
     exit(EXIT_FAILURE);
-  }
-  else {
+  } else {
     str->s[0] = '\0';
   }
   return;
@@ -2329,19 +2452,19 @@ static void newString(String *str) {
 ticks Utils::getticks() {
 #ifdef WIN32
   struct timeval tv;
-  gettimeofday (&tv, 0);
+  gettimeofday(&tv, 0);
 
   return (((ticks)tv.tv_usec) + (((ticks)tv.tv_sec) * 1000000LL));
 #else
 #if defined(__i386__)
   ticks x;
 
-  __asm__ volatile (".byte 0x0f, 0x31" : "=A" (x));
+  __asm__ volatile(".byte 0x0f, 0x31" : "=A"(x));
   return x;
 #elif defined(__x86_64__)
   u_int32_t a, d;
 
-  asm volatile("rdtsc" : "=a" (a), "=d" (d));
+  asm volatile("rdtsc" : "=a"(a), "=d"(d));
   return (((ticks)a) | (((ticks)d) << 32));
 
   /*
@@ -2350,7 +2473,7 @@ ticks Utils::getticks() {
   */
 #else /* ARM, MIPS.... (not very fast) */
   struct timeval tv;
-  gettimeofday (&tv, 0);
+  gettimeofday(&tv, 0);
 
   return (((ticks)tv.tv_usec) + (((ticks)tv.tv_sec) * 1000000LL));
 #endif
@@ -2373,9 +2496,10 @@ ticks Utils::gettickspersec() {
   _usleep(1001);
 
   ret = (Utils::getticks() - tick_start - tick_delta) * 1000; /*kHz -> Hz*/
-  if(ret == 0) ret = 1; /* Avoid invalid values */
+  if (ret == 0)
+    ret = 1; /* Avoid invalid values */
 
-  return(ret);
+  return (ret);
 #else
   return CLOCKS_PER_SEC;
 #endif
@@ -2383,42 +2507,42 @@ ticks Utils::gettickspersec() {
 
 /* **************************************** */
 
-static bool scan_dir(const char * dir_name,
-		     list<pair<struct dirent *, char * > > *dirlist,
-		     unsigned long *total) {
+static bool scan_dir(const char *dir_name,
+                     list<pair<struct dirent *, char *>> *dirlist,
+                     unsigned long *total) {
   int path_length;
-  char path[MAX_PATH+2];
+  char path[MAX_PATH + 2];
   DIR *d;
   struct stat buf;
 
   d = opendir(dir_name);
-  if(!d) return false;
+  if (!d)
+    return false;
 
   while (1) {
     struct dirent *entry;
     const char *d_name;
 
     entry = readdir(d);
-    if(!entry) break;
+    if (!entry)
+      break;
     d_name = entry->d_name;
 
-    if(entry->d_type & DT_REG) {
+    if (entry->d_type & DT_REG) {
       snprintf(path, sizeof(path), "%s/%s", dir_name, entry->d_name);
-      if(!stat(path, &buf)) {
+      if (!stat(path, &buf)) {
         struct dirent *temp = (struct dirent *)malloc(sizeof(struct dirent));
         memcpy(temp, entry, sizeof(struct dirent));
         dirlist->push_back(make_pair(temp, strndup(path, MAX_PATH)));
-	if(total)
-	  *total += buf.st_size;
+        if (total)
+          *total += buf.st_size;
       }
 
-    } else if(entry->d_type & DT_DIR) {
-      if(strncmp (d_name, "..", 2) != 0 &&
-	 strncmp (d_name, ".", 1) != 0) {
-        path_length = snprintf (path, MAX_PATH,
-                                "%s/%s", dir_name, d_name);
+    } else if (entry->d_type & DT_DIR) {
+      if (strncmp(d_name, "..", 2) != 0 && strncmp(d_name, ".", 1) != 0) {
+        path_length = snprintf(path, MAX_PATH, "%s/%s", dir_name, d_name);
 
-        if(path_length >= MAX_PATH)
+        if (path_length >= MAX_PATH)
           return false;
 
         scan_dir(path, dirlist, total);
@@ -2426,20 +2550,22 @@ static bool scan_dir(const char * dir_name,
     }
   }
 
-  if(closedir(d)) return false;
+  if (closedir(d))
+    return false;
 
   return true;
 }
 
 /* **************************************** */
 
-bool file_mtime_compare(const pair<struct dirent *, char * > &d1, const pair<struct dirent *, char * > &d2) {
+bool file_mtime_compare(const pair<struct dirent *, char *> &d1,
+                        const pair<struct dirent *, char *> &d2) {
   struct stat sa, sb;
 
-  if(!d1.second || !d2.second)
+  if (!d1.second || !d2.second)
     return false;
 
-  if(stat(d1.second, &sa) || stat(d2.second, &sb))
+  if (stat(d1.second, &sa) || stat(d2.second, &sb))
     return false;
 
   return difftime(sa.st_mtime, sb.st_mtime) <= 0;
@@ -2447,71 +2573,73 @@ bool file_mtime_compare(const pair<struct dirent *, char * > &d1, const pair<str
 
 /* **************************************** */
 
-bool Utils::discardOldFilesExceeding(const char *path, const unsigned long max_size) {
+bool Utils::discardOldFilesExceeding(const char *path,
+                                     const unsigned long max_size) {
   unsigned long total = 0;
-  list<pair<struct dirent *, char * > > fileslist;
-  list<pair<struct dirent *, char * > >::iterator it;
+  list<pair<struct dirent *, char *>> fileslist;
+  list<pair<struct dirent *, char *>>::iterator it;
   struct stat st;
 
-  if(path == NULL || !strncmp(path, "", MAX_PATH))
+  if (path == NULL || !strncmp(path, "", MAX_PATH))
     return false;
 
   /* First, get a list of all non-dir dirents and compute total size */
-  if(!scan_dir(path, &fileslist, &total)) return false;
+  if (!scan_dir(path, &fileslist, &total))
+    return false;
 
-  //printf("path: %s, total: %u, max_size: %u\n", path, total, max_size);
+  // printf("path: %s, total: %u, max_size: %u\n", path, total, max_size);
 
-  if(total < max_size) return true;
+  if (total < max_size)
+    return true;
 
   fileslist.sort(file_mtime_compare);
 
   /* Third, traverse list and delete until we go below quota */
   for (it = fileslist.begin(); it != fileslist.end(); ++it) {
-    //printf("[file: %s][path: %s]\n", it->first->d_name, it->second);
-    if(!it->second) continue;
+    // printf("[file: %s][path: %s]\n", it->first->d_name, it->second);
+    if (!it->second)
+      continue;
 
     stat(it->second, &st);
     unlink(it->second);
 
     total -= st.st_size;
-    if(total < max_size)
+    if (total < max_size)
       break;
   }
 
   for (it = fileslist.begin(); it != fileslist.end(); ++it) {
-    if(it->first)
+    if (it->first)
       free(it->first);
-    if(it->second)
+    if (it->second)
       free(it->second);
   }
-
 
   return true;
 }
 
 /* **************************************** */
 
-char* Utils::formatMac(const u_int8_t * const mac, char *buf, u_int buf_len) {
-  if((mac == NULL) || (ntop->getPrefs()->getHostMask() != no_host_mask))
+char *Utils::formatMac(const u_int8_t *const mac, char *buf, u_int buf_len) {
+  if ((mac == NULL) || (ntop->getPrefs()->getHostMask() != no_host_mask))
     snprintf(buf, buf_len, "00:00:00:00:00:00");
   else
-    snprintf(buf, buf_len, "%02X:%02X:%02X:%02X:%02X:%02X",
-	     mac[0] & 0xFF, mac[1] & 0xFF,
-	     mac[2] & 0xFF, mac[3] & 0xFF,
-	     mac[4] & 0xFF, mac[5] & 0xFF);
-  return(buf);
+    snprintf(buf, buf_len, "%02X:%02X:%02X:%02X:%02X:%02X", mac[0] & 0xFF,
+             mac[1] & 0xFF, mac[2] & 0xFF, mac[3] & 0xFF, mac[4] & 0xFF,
+             mac[5] & 0xFF);
+  return (buf);
 }
 
 /* **************************************** */
 
 u_int64_t Utils::macaddr_int(const u_int8_t *mac) {
-  if(mac == NULL)
-    return(0);
+  if (mac == NULL)
+    return (0);
   else {
     u_int64_t mac_int = 0;
 
-    for(u_int8_t i=0; i<6; i++){
-      mac_int |= ((u_int64_t)(mac[i] & 0xFF)) << (5-i)*8;
+    for (u_int8_t i = 0; i < 6; i++) {
+      mac_int |= ((u_int64_t)(mac[i] & 0xFF)) << (5 - i) * 8;
     }
 
     return mac_int;
@@ -2533,15 +2661,15 @@ void Utils::readMac(char *_ifname, dump_mac_t mac_addr) {
   struct ifaddrs *ifap, *ifaptr;
   unsigned char *ptr;
 
-  if((res = getifaddrs(&ifap)) == 0) {
-    for(ifaptr = ifap; ifaptr != NULL; ifaptr = ifaptr->ifa_next) {
-      if(!strcmp(ifaptr->ifa_name, ifname) && (ifaptr->ifa_addr->sa_family == AF_LINK)) {
+  if ((res = getifaddrs(&ifap)) == 0) {
+    for (ifaptr = ifap; ifaptr != NULL; ifaptr = ifaptr->ifa_next) {
+      if (!strcmp(ifaptr->ifa_name, ifname) &&
+          (ifaptr->ifa_addr->sa_family == AF_LINK)) {
 
-	ptr = (unsigned char *)LLADDR((struct sockaddr_dl *)ifaptr->ifa_addr);
-	memcpy(mac_addr, ptr, 6);
+        ptr = (unsigned char *)LLADDR((struct sockaddr_dl *)ifaptr->ifa_addr);
+        memcpy(mac_addr, ptr, 6);
 
-	break;
-
+        break;
       }
     }
     freeifaddrs(ifap);
@@ -2554,20 +2682,21 @@ void Utils::readMac(char *_ifname, dump_mac_t mac_addr) {
 
   /* Dummy socket, just to make ioctls with */
   _sock = socket(PF_INET, SOCK_DGRAM, 0);
-  strncpy(ifr.ifr_name, ifname, sizeof(ifr.ifr_name)-1);
+  strncpy(ifr.ifr_name, ifname, sizeof(ifr.ifr_name) - 1);
 
-  if((res = ioctl(_sock, SIOCGIFHWADDR, &ifr)) >= 0)
+  if ((res = ioctl(_sock, SIOCGIFHWADDR, &ifr)) >= 0)
     memcpy(mac_addr, ifr.ifr_ifru.ifru_hwaddr.sa_data, 6);
 
   close(_sock);
 #endif
 
-  if(res < 0)
-    ntop->getTrace()->traceEvent(TRACE_ERROR, "Cannot get hw addr for %s", ifname);
+  if (res < 0)
+    ntop->getTrace()->traceEvent(TRACE_ERROR, "Cannot get hw addr for %s",
+                                 ifname);
   else
-    ntop->getTrace()->traceEvent(TRACE_INFO, "Interface %s has MAC %s",
-				 ifname,
-				 formatMac((u_int8_t *)mac_addr, mac_addr_buf, sizeof(mac_addr_buf)));
+    ntop->getTrace()->traceEvent(
+        TRACE_INFO, "Interface %s has MAC %s", ifname,
+        formatMac((u_int8_t *)mac_addr, mac_addr_buf, sizeof(mac_addr_buf)));
 }
 
 #else
@@ -2586,22 +2715,23 @@ u_int32_t Utils::readIPv4(char *ifname) {
   int fd;
 
   memset(&ifr, 0, sizeof(ifr));
-  strncpy(ifr.ifr_name, ifname, sizeof(ifr.ifr_name)-1);
+  strncpy(ifr.ifr_name, ifname, sizeof(ifr.ifr_name) - 1);
   ifr.ifr_addr.sa_family = AF_INET;
 
-  if((fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP)) < 0) {
+  if ((fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP)) < 0) {
     ntop->getTrace()->traceEvent(TRACE_WARNING, "Unable to create socket");
   } else {
-    if(ioctl(fd, SIOCGIFADDR, &ifr) == -1)
-      ntop->getTrace()->traceEvent(TRACE_INFO, "Unable to read IPv4 for device %s", ifname);
+    if (ioctl(fd, SIOCGIFADDR, &ifr) == -1)
+      ntop->getTrace()->traceEvent(TRACE_INFO,
+                                   "Unable to read IPv4 for device %s", ifname);
     else
-      ret_ip = (((struct sockaddr_in*)&ifr.ifr_addr)->sin_addr).s_addr;
+      ret_ip = (((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr).s_addr;
 
     closesocket(fd);
   }
 #endif
 
-  return(ret_ip);
+  return (ret_ip);
 }
 
 /* **************************************** */
@@ -2616,34 +2746,20 @@ bool Utils::readIPv6(char *ifname, struct in6_addr *sin) {
 
   f = fopen("/proc/net/if_inet6", "r");
   if (f == NULL)
-    return(false);
+    return (false);
 
   while (19 == fscanf(f,
-		      " %2hhx%2hhx%2hhx%2hhx%2hhx%2hhx%2hhx%2hhx%2hhx%2hhx%2hhx%2hhx%2hhx%2hhx%2hhx%2hhx %*x %x %x %*x %s",
-		      &ipv6[0],
-		      &ipv6[1],
-		      &ipv6[2],
-		      &ipv6[3],
-		      &ipv6[4],
-		      &ipv6[5],
-		      &ipv6[6],
-		      &ipv6[7],
-		      &ipv6[8],
-		      &ipv6[9],
-		      &ipv6[10],
-		      &ipv6[11],
-		      &ipv6[12],
-		      &ipv6[13],
-		      &ipv6[14],
-		      &ipv6[15],
-		      &prefix,
-		      &scope,
-		      dname)) {
+                      " %2hhx%2hhx%2hhx%2hhx%2hhx%2hhx%2hhx%2hhx%2hhx%2hhx%"
+                      "2hhx%2hhx%2hhx%2hhx%2hhx%2hhx %*x %x %x %*x %s",
+                      &ipv6[0], &ipv6[1], &ipv6[2], &ipv6[3], &ipv6[4],
+                      &ipv6[5], &ipv6[6], &ipv6[7], &ipv6[8], &ipv6[9],
+                      &ipv6[10], &ipv6[11], &ipv6[12], &ipv6[13], &ipv6[14],
+                      &ipv6[15], &prefix, &scope, dname)) {
 
     if (strcmp(ifname, dname) != 0)
       continue;
 
-    if(scope == 0x0000U /* IPV6_ADDR_GLOBAL */) {
+    if (scope == 0x0000U /* IPV6_ADDR_GLOBAL */) {
       memcpy(sin, ipv6, sizeof(ipv6));
       rc = true;
       break;
@@ -2660,46 +2776,49 @@ bool Utils::readIPv6(char *ifname, struct in6_addr *sin) {
 
 u_int16_t Utils::getIfMTU(const char *ifname) {
 #ifdef WIN32
-  return(CONST_DEFAULT_MAX_PACKET_SIZE);
+  return (CONST_DEFAULT_MAX_PACKET_SIZE);
 #else
   struct ifreq ifr;
   u_int32_t max_packet_size = CONST_DEFAULT_MAX_PACKET_SIZE; /* default */
   int fd;
 
   memset(&ifr, 0, sizeof(ifr));
-  strncpy(ifr.ifr_name, ifname, sizeof(ifr.ifr_name)-1);
+  strncpy(ifr.ifr_name, ifname, sizeof(ifr.ifr_name) - 1);
   ifr.ifr_addr.sa_family = AF_INET;
 
-  if((fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
+  if ((fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
     ntop->getTrace()->traceEvent(TRACE_WARNING, "Unable to create socket");
   } else {
-    if(ioctl(fd, SIOCGIFMTU, &ifr) == -1)
-      ntop->getTrace()->traceEvent(TRACE_INFO, "Unable to read MTU for device %s", ifname);
+    if (ioctl(fd, SIOCGIFMTU, &ifr) == -1)
+      ntop->getTrace()->traceEvent(TRACE_INFO,
+                                   "Unable to read MTU for device %s", ifname);
     else {
-      max_packet_size = ifr.ifr_mtu + sizeof(struct ndpi_ethhdr) + sizeof(Ether80211q);
+      max_packet_size =
+          ifr.ifr_mtu + sizeof(struct ndpi_ethhdr) + sizeof(Ether80211q);
 
-      if(max_packet_size > ((u_int16_t)-1))
-	max_packet_size = ((u_int16_t)-1);
+      if (max_packet_size > ((u_int16_t)-1))
+        max_packet_size = ((u_int16_t)-1);
     }
 
     closesocket(fd);
   }
 
-  return((u_int16_t) max_packet_size);
+  return ((u_int16_t)max_packet_size);
 #endif
 }
 
 /* **************************************** */
 
 u_int32_t Utils::getMaxIfSpeed(const char *_ifname) {
-#if defined(__linux__) && (!defined(__GNUC_RH_RELEASE__) || (__GNUC_RH_RELEASE__ != 44))
+#if defined(__linux__) &&                                                      \
+    (!defined(__GNUC_RH_RELEASE__) || (__GNUC_RH_RELEASE__ != 44))
   int sock, rc;
   struct ifreq ifr;
   struct ethtool_cmd edata;
   u_int32_t ifSpeed = 1000;
   char ifname[15];
 
-  if(strchr(_ifname, ',')) {
+  if (strchr(_ifname, ',')) {
     /* These are interfaces with , (e.g. eth0,eth1) */
     char ifaces[128], *iface, *tmp;
     u_int32_t speed = 0;
@@ -2707,18 +2826,19 @@ u_int32_t Utils::getMaxIfSpeed(const char *_ifname) {
     snprintf(ifaces, sizeof(ifaces), "%s", _ifname);
     iface = strtok_r(ifaces, ",", &tmp);
 
-    while(iface) {
+    while (iface) {
       u_int32_t thisSpeed;
 
       ifname2devname(iface, ifname, sizeof(ifname));
 
       thisSpeed = getMaxIfSpeed(ifname);
-      if(thisSpeed > speed) speed = thisSpeed;
+      if (thisSpeed > speed)
+        speed = thisSpeed;
 
       iface = strtok_r(NULL, ",", &tmp);
     }
 
-    return(speed);
+    return (speed);
   } else {
     ifname2devname(_ifname, ifname, sizeof(ifname));
   }
@@ -2726,13 +2846,13 @@ u_int32_t Utils::getMaxIfSpeed(const char *_ifname) {
   memset(&ifr, 0, sizeof(struct ifreq));
 
   sock = socket(PF_INET, SOCK_DGRAM, 0);
-  if(sock < 0) {
+  if (sock < 0) {
     // ntop->getTrace()->traceEvent(TRACE_ERROR, "Socket error [%s]", ifname);
-    return(ifSpeed);
+    return (ifSpeed);
   }
 
-  strncpy(ifr.ifr_name, ifname, sizeof(ifr.ifr_name)-1);
-  ifr.ifr_data = (char *) &edata;
+  strncpy(ifr.ifr_name, ifname, sizeof(ifr.ifr_name) - 1);
+  ifr.ifr_data = (char *)&edata;
 
   // Do the work
   edata.cmd = ETHTOOL_GSET;
@@ -2740,20 +2860,21 @@ u_int32_t Utils::getMaxIfSpeed(const char *_ifname) {
   rc = ioctl(sock, SIOCETHTOOL, &ifr);
   closesocket(sock);
 
-  if(rc < 0) {
-    // ntop->getTrace()->traceEvent(TRACE_ERROR, "I/O Control error [%s]", ifname);
-    return(ifSpeed);
+  if (rc < 0) {
+    // ntop->getTrace()->traceEvent(TRACE_ERROR, "I/O Control error [%s]",
+    // ifname);
+    return (ifSpeed);
   }
 
-  if((int32_t)ethtool_cmd_speed(&edata) != SPEED_UNKNOWN)
+  if ((int32_t)ethtool_cmd_speed(&edata) != SPEED_UNKNOWN)
     ifSpeed = ethtool_cmd_speed(&edata);
 
   ntop->getTrace()->traceEvent(TRACE_INFO, "Interface %s has MAC Speed = %u",
-			       ifname, edata.speed);
+                               ifname, edata.speed);
 
-  return(ifSpeed);
+  return (ifSpeed);
 #else
-  return(1000);
+  return (1000);
 #endif
 }
 
@@ -2769,15 +2890,15 @@ int Utils::ethtoolGet(const char *ifname, int cmd, uint32_t *v) {
 
   fd = socket(AF_INET, SOCK_DGRAM, 0);
 
-  if(fd == -1)
+  if (fd == -1)
     return -1;
 
-  strncpy(ifr.ifr_name, ifname, sizeof(ifr.ifr_name)-1);
+  strncpy(ifr.ifr_name, ifname, sizeof(ifr.ifr_name) - 1);
 
   ethv.cmd = cmd;
-  ifr.ifr_data = (char *) &ethv;
+  ifr.ifr_data = (char *)&ethv;
 
-  if(ioctl(fd, SIOCETHTOOL, (char *) &ifr) < 0) {
+  if (ioctl(fd, SIOCETHTOOL, (char *)&ifr) < 0) {
     close(fd);
     return -1;
   }
@@ -2803,16 +2924,16 @@ int Utils::ethtoolSet(const char *ifname, int cmd, uint32_t v) {
 
   fd = socket(AF_INET, SOCK_DGRAM, 0);
 
-  if(fd == -1)
+  if (fd == -1)
     return -1;
 
-  strncpy(ifr.ifr_name, ifname, sizeof(ifr.ifr_name)-1);
+  strncpy(ifr.ifr_name, ifname, sizeof(ifr.ifr_name) - 1);
 
   ethv.cmd = cmd;
   ethv.data = v;
-  ifr.ifr_data = (char *) &ethv;
+  ifr.ifr_data = (char *)&ethv;
 
-  if(ioctl(fd, SIOCETHTOOL, (char *) &ifr) < 0) {
+  if (ioctl(fd, SIOCETHTOOL, (char *)&ifr) < 0) {
     close(fd);
     return -1;
   }
@@ -2832,27 +2953,27 @@ int Utils::disableOffloads(const char *ifname) {
   uint32_t v = 0;
 
 #ifdef ETHTOOL_GGRO
-  if(Utils::ethtoolGet(ifname, ETHTOOL_GGRO, &v) == 0 && v != 0)
+  if (Utils::ethtoolGet(ifname, ETHTOOL_GGRO, &v) == 0 && v != 0)
     Utils::ethtoolSet(ifname, ETHTOOL_SGRO, 0);
 #endif
 
 #ifdef ETHTOOL_GGSO
-  if(Utils::ethtoolGet(ifname, ETHTOOL_GGSO, &v) == 0 && v != 0)
+  if (Utils::ethtoolGet(ifname, ETHTOOL_GGSO, &v) == 0 && v != 0)
     Utils::ethtoolSet(ifname, ETHTOOL_SGSO, 0);
 #endif
 
 #ifdef ETHTOOL_GTSO
-  if(Utils::ethtoolGet(ifname, ETHTOOL_GTSO, &v) == 0 && v != 0)
+  if (Utils::ethtoolGet(ifname, ETHTOOL_GTSO, &v) == 0 && v != 0)
     Utils::ethtoolSet(ifname, ETHTOOL_STSO, 0);
 #endif
 
 #ifdef ETHTOOL_GSG
-  if(Utils::ethtoolGet(ifname, ETHTOOL_GSG, &v) == 0 && v != 0)
+  if (Utils::ethtoolGet(ifname, ETHTOOL_GSG, &v) == 0 && v != 0)
     Utils::ethtoolSet(ifname, ETHTOOL_SSG, 0);
 #endif
 
 #ifdef ETHTOOL_GFLAGS
-  if(Utils::ethtoolGet(ifname, ETHTOOL_GFLAGS, &v) == 0 && (v & ETH_FLAG_LRO))
+  if (Utils::ethtoolGet(ifname, ETHTOOL_GFLAGS, &v) == 0 && (v & ETH_FLAG_LRO))
     Utils::ethtoolSet(ifname, ETHTOOL_SFLAGS, v & ~ETH_FLAG_LRO);
 #endif
 
@@ -2865,55 +2986,52 @@ int Utils::disableOffloads(const char *ifname) {
 /* **************************************** */
 
 bool Utils::isGoodNameToCategorize(char *name) {
-  if((name[0] == '\0')
-     || (strchr(name, '.') == NULL) /* Missing domain */
-     || (!strcmp(name, "Broadcast"))
-     || (!strcmp(name, "localhost"))
-     || strchr((const char*)name, ':') /* IPv6 */
-     || (strstr(name, "in-addr.arpa"))
-     || (strstr(name, "ip6.arpa"))
-     || (strstr(name, "_dns-sd._udp"))
-     )
-    return(false);
+  if ((name[0] == '\0') || (strchr(name, '.') == NULL) /* Missing domain */
+      || (!strcmp(name, "Broadcast")) || (!strcmp(name, "localhost")) ||
+      strchr((const char *)name, ':') /* IPv6 */
+      || (strstr(name, "in-addr.arpa")) || (strstr(name, "ip6.arpa")) ||
+      (strstr(name, "_dns-sd._udp")))
+    return (false);
   else
-    return(true);
+    return (true);
 }
 
 /* **************************************** */
 
-char* Utils::get2ndLevelDomain(char *_domainname) {
+char *Utils::get2ndLevelDomain(char *_domainname) {
   int i, found = 0;
 
-  for(i=(int)strlen(_domainname)-1, found = 0; (found != 2) && (i > 0); i--) {
-    if(_domainname[i] == '.') {
+  for (i = (int)strlen(_domainname) - 1, found = 0; (found != 2) && (i > 0);
+       i--) {
+    if (_domainname[i] == '.') {
       found++;
 
-      if(found == 2) {
-	return(&_domainname[i+1]);
+      if (found == 2) {
+        return (&_domainname[i + 1]);
       }
     }
   }
 
-  return(_domainname);
+  return (_domainname);
 }
 
 /* ****************************************************** */
 
-char* Utils::tokenizer(char *arg, int c, char **data) {
+char *Utils::tokenizer(char *arg, int c, char **data) {
   char *p = NULL;
 
-  if((p = strchr(arg, c)) != NULL) {
+  if ((p = strchr(arg, c)) != NULL) {
     *p = '\0';
-    if(data) {
-      if(strlen(arg))
+    if (data) {
+      if (strlen(arg))
         *data = strdup(arg);
       else
         *data = strdup("");
     }
 
     arg = &(p[1]);
-  } else if(data) {
-    if(arg)
+  } else if (data) {
+    if (arg)
       *data = strdup(arg);
     else
       *data = NULL;
@@ -2925,15 +3043,15 @@ char* Utils::tokenizer(char *arg, int c, char **data) {
 /* ****************************************************** */
 
 in_addr_t Utils::inet_addr(const char *cp) {
-  if((cp == NULL) || (cp[0] == '\0'))
-    return(0);
+  if ((cp == NULL) || (cp[0] == '\0'))
+    return (0);
   else
-    return(::inet_addr(cp));
+    return (::inet_addr(cp));
 }
 
 /* ****************************************************** */
 
-char* Utils::intoaV4(unsigned int addr, char* buf, u_short bufLen) {
+char *Utils::intoaV4(unsigned int addr, char *buf, u_short bufLen) {
   char *cp;
   int n;
 
@@ -2946,36 +3064,38 @@ char* Utils::intoaV4(unsigned int addr, char* buf, u_short bufLen) {
 
     *--cp = byte % 10 + '0';
     byte /= 10;
-    if(byte > 0) {
+    if (byte > 0) {
       *--cp = byte % 10 + '0';
       byte /= 10;
-      if(byte > 0)
-	*--cp = byte + '0';
+      if (byte > 0)
+        *--cp = byte + '0';
     }
-    if(n > 1)
+    if (n > 1)
       *--cp = '.';
     addr >>= 8;
   } while (--n > 0);
 
-  return(cp);
+  return (cp);
 }
 
 /* ****************************************************** */
 
-char* Utils::intoaV6(struct ndpi_in6_addr ipv6, u_int8_t bitmask, char* buf, u_short bufLen) {
+char *Utils::intoaV6(struct ndpi_in6_addr ipv6, u_int8_t bitmask, char *buf,
+                     u_short bufLen) {
   char *ret;
 
-  for(int32_t i = bitmask, j = 0; i > 0; i -= 8, ++j)
-    ipv6.u6_addr.u6_addr8[j] &= i >= 8 ? 0xff : (u_int32_t)(( 0xffU << ( 8 - i ) ) & 0xffU );
+  for (int32_t i = bitmask, j = 0; i > 0; i -= 8, ++j)
+    ipv6.u6_addr.u6_addr8[j] &=
+        i >= 8 ? 0xff : (u_int32_t)((0xffU << (8 - i)) & 0xffU);
 
-  ret = (char*)inet_ntop(AF_INET6, &ipv6, buf, bufLen);
+  ret = (char *)inet_ntop(AF_INET6, &ipv6, buf, bufLen);
 
-  if(ret == NULL) {
+  if (ret == NULL) {
     /* Internal error (buffer too short) */
     buf[0] = '\0';
-    return(buf);
+    return (buf);
   } else
-    return(ret);
+    return (ret);
 }
 
 /* ****************************************************** */
@@ -2983,31 +3103,32 @@ char* Utils::intoaV6(struct ndpi_in6_addr ipv6, u_int8_t bitmask, char* buf, u_s
 void Utils::xor_encdec(u_char *data, int data_len, u_char *key) {
   int i, y;
 
-  for(i = 0, y = 0; i < data_len; i++) {
+  for (i = 0, y = 0; i < data_len; i++) {
     data[i] ^= key[y++];
-    if(key[y] == 0) y = 0;
+    if (key[y] == 0)
+      y = 0;
   }
 }
 
 /* ****************************************************** */
 
-u_int32_t Utils::macHash(const u_int8_t * const mac) {
-  if(mac == NULL)
-    return(0);
+u_int32_t Utils::macHash(const u_int8_t *const mac) {
+  if (mac == NULL)
+    return (0);
   else {
     u_int32_t hash = 0;
 
-    for(int i=0; i<6; i++)
-      hash += mac[i] << (i+1);
+    for (int i = 0; i < 6; i++)
+      hash += mac[i] << (i + 1);
 
-    return(hash);
+    return (hash);
   }
 }
 
 /* ****************************************************** */
 
-bool Utils::isEmptyMac(const u_int8_t * const mac) {
-  static const u_int8_t zero[6] = { 0, 0, 0, 0, 0, 0 };
+bool Utils::isEmptyMac(const u_int8_t *const mac) {
+  static const u_int8_t zero[6] = {0, 0, 0, 0, 0, 0};
 
   return (memcmp(mac, zero, 6) == 0);
 }
@@ -3017,13 +3138,13 @@ bool Utils::isEmptyMac(const u_int8_t * const mac) {
 /* https://en.wikipedia.org/wiki/Multicast_address */
 /* https://hwaddress.com/company/private */
 bool Utils::isSpecialMac(u_int8_t *mac) {
-  if(isEmptyMac(mac))
-    return(true);
+  if (isEmptyMac(mac))
+    return (true);
   else {
     u_int16_t v2 = (mac[0] << 8) + mac[1];
     u_int32_t v3 = (mac[0] << 16) + (mac[1] << 8) + mac[2];
 
-    switch(v3) {
+    switch (v3) {
     case 0x01000C:
     case 0x0180C2:
     case 0x01005E:
@@ -3125,27 +3246,26 @@ bool Utils::isSpecialMac(u_int8_t *mac) {
     case 0xF04F7C:
     case 0xF0A225:
     case 0xFCC233:
-      return(true);
+      return (true);
     }
 
-    switch(v2) {
+    switch (v2) {
     case 0xFFFF:
     case 0x3333:
-      return(true);
+      return (true);
       break;
     }
 
-    return(false);
+    return (false);
   }
 }
 
 /* ****************************************************** */
 
 bool Utils::isBroadcastMac(const u_int8_t *mac) {
-  u_int8_t broad[6] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
+  u_int8_t broad[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 
-  return(memcmp(mac, broad, 6) == 0);
-
+  return (memcmp(mac, broad, 6) == 0);
 }
 
 /* ****************************************************** */
@@ -3155,81 +3275,84 @@ bool Utils::isBroadcastMac(const u_int8_t *mac) {
   https://ipcisco.com/lesson/multicast-mac-addresses/
 */
 bool Utils::isMulticastMac(const u_int8_t *mac) {
-  if(isEmptyMac(mac))
-    return(false);
+  if (isEmptyMac(mac))
+    return (false);
 
-  if(
-     ((mac[0] == 0x33) && (mac[1] == 0x33))
-     ||
-     ((mac[0] == 0x01) && (mac[1] == 0x00) && (mac[2] == 0x5E))
-     )
-    return(true);
+  if (((mac[0] == 0x33) && (mac[1] == 0x33)) ||
+      ((mac[0] == 0x01) && (mac[1] == 0x00) && (mac[2] == 0x5E)))
+    return (true);
   else
-    return(false);
+    return (false);
 }
 
 /* ****************************************************** */
 
 void Utils::parseMac(u_int8_t *mac, const char *symMac) {
-  int _mac[6] = { 0 };
+  int _mac[6] = {0};
 
-  if(symMac)
-    sscanf(symMac, "%x:%x:%x:%x:%x:%x",
-	   &_mac[0], &_mac[1], &_mac[2],
-	   &_mac[3], &_mac[4], &_mac[5]);
+  if (symMac)
+    sscanf(symMac, "%x:%x:%x:%x:%x:%x", &_mac[0], &_mac[1], &_mac[2], &_mac[3],
+           &_mac[4], &_mac[5]);
 
-  for(int i = 0; i < 6; i++) mac[i] = (u_int8_t)_mac[i];
+  for (int i = 0; i < 6; i++)
+    mac[i] = (u_int8_t)_mac[i];
 }
 
 /* *********************************************** */
 
-ndpi_patricia_node_t* Utils::add_to_ptree(ndpi_patricia_tree_t *tree, int family, void *addr, int bits) {
+ndpi_patricia_node_t *Utils::add_to_ptree(ndpi_patricia_tree_t *tree,
+                                          int family, void *addr, int bits) {
   ndpi_prefix_t prefix;
   ndpi_patricia_node_t *node;
   u_int16_t maxbits = ndpi_patricia_get_maxbits(tree);
 
-  if(family == AF_INET)
-    ndpi_fill_prefix_v4(&prefix, (struct in_addr*)addr, bits, maxbits);
-  else if(family == AF_INET6)
-    ndpi_fill_prefix_v6(&prefix, (struct in6_addr*)addr, bits, maxbits);
+  if (family == AF_INET)
+    ndpi_fill_prefix_v4(&prefix, (struct in_addr *)addr, bits, maxbits);
+  else if (family == AF_INET6)
+    ndpi_fill_prefix_v6(&prefix, (struct in6_addr *)addr, bits, maxbits);
   else
-    ndpi_fill_prefix_mac(&prefix, (u_int8_t*)addr, bits, maxbits);
+    ndpi_fill_prefix_mac(&prefix, (u_int8_t *)addr, bits, maxbits);
 
   node = ndpi_patricia_lookup(tree, &prefix);
 
-  return(node);
+  return (node);
 }
 
 /* ******************************************* */
 
-ndpi_patricia_node_t* Utils::ptree_match(ndpi_patricia_tree_t *tree, int family, const void * const addr, int bits) {
+ndpi_patricia_node_t *Utils::ptree_match(ndpi_patricia_tree_t *tree, int family,
+                                         const void *const addr, int bits) {
   ndpi_prefix_t prefix;
   u_int16_t maxbits = ndpi_patricia_get_maxbits(tree);
 
-  if(addr == NULL) return(NULL);
+  if (addr == NULL)
+    return (NULL);
 
-  if(family == AF_INET)
-    ndpi_fill_prefix_v4(&prefix, (struct in_addr*)addr, bits, maxbits);
-  else if(family == AF_INET6)
-    ndpi_fill_prefix_v6(&prefix, (struct in6_addr*)addr, bits, maxbits);
+  if (family == AF_INET)
+    ndpi_fill_prefix_v4(&prefix, (struct in_addr *)addr, bits, maxbits);
+  else if (family == AF_INET6)
+    ndpi_fill_prefix_v6(&prefix, (struct in6_addr *)addr, bits, maxbits);
   else
-    ndpi_fill_prefix_mac(&prefix, (u_int8_t*)addr, bits, maxbits);
+    ndpi_fill_prefix_mac(&prefix, (u_int8_t *)addr, bits, maxbits);
 
-  if(prefix.bitlen > maxbits) { /* safety check */
+  if (prefix.bitlen > maxbits) { /* safety check */
     char buf[128];
-    ntop->getTrace()->traceEvent(TRACE_ERROR, "Bad radix tree lookup for %s "
-      "(prefix family = %u, len = %u (%u), tree max len = %u)",
-      Utils::ptree_prefix_print(&prefix, buf, sizeof(buf)) ? buf : "-",
-      family, prefix.bitlen, bits, maxbits);
+    ntop->getTrace()->traceEvent(
+        TRACE_ERROR,
+        "Bad radix tree lookup for %s "
+        "(prefix family = %u, len = %u (%u), tree max len = %u)",
+        Utils::ptree_prefix_print(&prefix, buf, sizeof(buf)) ? buf : "-",
+        family, prefix.bitlen, bits, maxbits);
     return NULL;
   }
 
-  return(ndpi_patricia_search_best(tree, &prefix));
+  return (ndpi_patricia_search_best(tree, &prefix));
 }
 
 /* ******************************************* */
 
-ndpi_patricia_node_t* Utils::ptree_add_rule(ndpi_patricia_tree_t *ptree, const char * addr_line) {
+ndpi_patricia_node_t *Utils::ptree_add_rule(ndpi_patricia_tree_t *ptree,
+                                            const char *addr_line) {
   char *ip, *bits, *slash = NULL, *line = NULL;
   struct in_addr addr4;
   struct in6_addr addr6;
@@ -3240,8 +3363,8 @@ ndpi_patricia_node_t* Utils::ptree_add_rule(ndpi_patricia_tree_t *ptree, const c
   line = strdup(addr_line);
   ip = line;
   bits = strchr(line, '/');
-  if(bits == NULL)
-    bits = (char*)"/32";
+  if (bits == NULL)
+    bits = (char *)"/32";
   else {
     slash = bits;
     slash[0] = '\0';
@@ -3251,12 +3374,13 @@ ndpi_patricia_node_t* Utils::ptree_add_rule(ndpi_patricia_tree_t *ptree, const c
 
   ntop->getTrace()->traceEvent(TRACE_DEBUG, "Rule %s/%s", ip, bits);
 
-  if(sscanf(ip, "%02X:%02X:%02X:%02X:%02X:%02X",
-	    &_mac[0], &_mac[1], &_mac[2], &_mac[3], &_mac[4], &_mac[5]) == 6) {
-    for(int i=0; i<6; i++) mac[i] = _mac[i];
+  if (sscanf(ip, "%02X:%02X:%02X:%02X:%02X:%02X", &_mac[0], &_mac[1], &_mac[2],
+             &_mac[3], &_mac[4], &_mac[5]) == 6) {
+    for (int i = 0; i < 6; i++)
+      mac[i] = _mac[i];
     node = add_to_ptree(ptree, AF_MAC, mac, 48);
-  } else if(strchr(ip, ':') != NULL) { /* IPv6 */
-    if(inet_pton(AF_INET6, ip, &addr6) == 1)
+  } else if (strchr(ip, ':') != NULL) { /* IPv6 */
+    if (inet_pton(AF_INET6, ip, &addr6) == 1)
       node = add_to_ptree(ptree, AF_INET6, &addr6, atoi(bits));
     else
       ntop->getTrace()->traceEvent(TRACE_ERROR, "Error parsing IPv6 %s\n", ip);
@@ -3264,51 +3388,56 @@ ndpi_patricia_node_t* Utils::ptree_add_rule(ndpi_patricia_tree_t *ptree, const c
     /* inet_aton(ip, &addr4) fails parsing subnets */
     int num_octets;
     u_int ip4_0 = 0, ip4_1 = 0, ip4_2 = 0, ip4_3 = 0;
-    u_char *ip4 = (u_char *) &addr4;
+    u_char *ip4 = (u_char *)&addr4;
 
-    if((num_octets = sscanf(ip, "%u.%u.%u.%u",
-			    &ip4_0, &ip4_1, &ip4_2, &ip4_3)) >= 1) {
+    if ((num_octets =
+             sscanf(ip, "%u.%u.%u.%u", &ip4_0, &ip4_1, &ip4_2, &ip4_3)) >= 1) {
       int num_bits = atoi(bits);
 
       ip4[0] = ip4_0, ip4[1] = ip4_1, ip4[2] = ip4_2, ip4[3] = ip4_3;
 
-      if(num_bits > 32) num_bits = 32;
+      if (num_bits > 32)
+        num_bits = 32;
 
-      if(num_octets * 8 < num_bits)
-	ntop->getTrace()->traceEvent(TRACE_INFO,
-				     "Found IP smaller than netmask [%s]", line);
+      if (num_octets * 8 < num_bits)
+        ntop->getTrace()->traceEvent(
+            TRACE_INFO, "Found IP smaller than netmask [%s]", line);
 
-      //addr4.s_addr = ntohl(addr4.s_addr);
+      // addr4.s_addr = ntohl(addr4.s_addr);
       node = add_to_ptree(ptree, AF_INET, &addr4, num_bits);
     } else {
       ntop->getTrace()->traceEvent(TRACE_ERROR, "Error parsing IPv4 %s\n", ip);
     }
   }
 
-  // ntop->getTrace()->traceEvent(TRACE_NORMAL, "Added IPv%d rule %s/%s [%p]", isV4 ? 4 : 6, ip, bits, node);
+  // ntop->getTrace()->traceEvent(TRACE_NORMAL, "Added IPv%d rule %s/%s [%p]",
+  // isV4 ? 4 : 6, ip, bits, node);
 
-  if(line) free(line);
-  return(node);
+  if (line)
+    free(line);
+  return (node);
 }
 
 /* ******************************************* */
 
-bool Utils::ptree_prefix_print(ndpi_prefix_t *prefix, char *buffer, size_t bufsize) {
+bool Utils::ptree_prefix_print(ndpi_prefix_t *prefix, char *buffer,
+                               size_t bufsize) {
   char *a, ipbuf[64];
 
-  switch(prefix->family) {
+  switch (prefix->family) {
   case AF_INET:
     a = Utils::intoaV4(ntohl(prefix->add.sin.s_addr), ipbuf, sizeof(ipbuf));
     snprintf(buffer, bufsize, "%s/%d", a, prefix->bitlen);
-    return(true);
+    return (true);
 
   case AF_INET6:
-    a = Utils::intoaV6(*((struct ndpi_in6_addr*)&prefix->add.sin6), prefix->bitlen, ipbuf, sizeof(ipbuf));
+    a = Utils::intoaV6(*((struct ndpi_in6_addr *)&prefix->add.sin6),
+                       prefix->bitlen, ipbuf, sizeof(ipbuf));
     snprintf(buffer, bufsize, "%s/%d", a, prefix->bitlen);
-    return(true);
+    return (true);
   }
 
-  return(false);
+  return (false);
 }
 
 /* ******************************************* */
@@ -3323,20 +3452,24 @@ int Utils::numberOfSetBits(u_int32_t i) {
 
 /* ******************************************* */
 
-void Utils::initRedis(Redis **r, const char *redis_host, const char *redis_password,
-		      u_int16_t redis_port, u_int8_t _redis_db_id, bool giveup_on_failure) {
-  if(r) {
-    if(*r) delete(*r);
-    (*r) = new (std::nothrow) Redis(redis_host, redis_password, redis_port, _redis_db_id, giveup_on_failure);
+void Utils::initRedis(Redis **r, const char *redis_host,
+                      const char *redis_password, u_int16_t redis_port,
+                      u_int8_t _redis_db_id, bool giveup_on_failure) {
+  if (r) {
+    if (*r)
+      delete (*r);
+    (*r) = new (std::nothrow) Redis(redis_host, redis_password, redis_port,
+                                    _redis_db_id, giveup_on_failure);
   }
 }
 
 /* ******************************************* */
 
-int Utils::tcpStateStr2State(const char * state_str) {
+int Utils::tcpStateStr2State(const char *state_str) {
   map<string, int>::const_iterator it;
 
-  if((it = tcp_state_str_2_state.find(state_str)) != tcp_state_str_2_state.end())
+  if ((it = tcp_state_str_2_state.find(state_str)) !=
+      tcp_state_str_2_state.end())
     return it->second;
 
   return 0;
@@ -3344,10 +3477,10 @@ int Utils::tcpStateStr2State(const char * state_str) {
 
 /* ******************************************* */
 
-const char * Utils::tcpState2StateStr(int state) {
+const char *Utils::tcpState2StateStr(int state) {
   map<int, string>::const_iterator it;
 
-  if((it = tcp_state_2_state_str.find(state)) != tcp_state_2_state_str.end())
+  if ((it = tcp_state_2_state_str.find(state)) != tcp_state_2_state_str.end())
     return it->second.c_str();
 
   return "UNKNOWN";
@@ -3355,10 +3488,11 @@ const char * Utils::tcpState2StateStr(int state) {
 
 /* ******************************************* */
 
-eBPFEventType Utils::eBPFEventStr2Event(const char * event_str) {
+eBPFEventType Utils::eBPFEventStr2Event(const char *event_str) {
   map<string, eBPFEventType>::const_iterator it;
 
-  if((it = ebpf_event_str_2_event.find(event_str)) != ebpf_event_str_2_event.end())
+  if ((it = ebpf_event_str_2_event.find(event_str)) !=
+      ebpf_event_str_2_event.end())
     return it->second;
 
   return ebpf_event_type_unknown;
@@ -3366,12 +3500,11 @@ eBPFEventType Utils::eBPFEventStr2Event(const char * event_str) {
 
 /* ******************************************* */
 
-const char * Utils::eBPFEvent2EventStr(eBPFEventType event) {
+const char *Utils::eBPFEvent2EventStr(eBPFEventType event) {
   map<eBPFEventType, string>::const_iterator it;
 
-  if((it = ebpf_event_2_event_str.find(event)) != ebpf_event_2_event_str.end())
+  if ((it = ebpf_event_2_event_str.find(event)) != ebpf_event_2_event_str.end())
     return it->second.c_str();
-
 
   return "UNKNOWN";
 }
@@ -3385,14 +3518,14 @@ void Utils::replacestr(char *line, const char *search, const char *replace) {
   char *sp;
   int search_len, replace_len, tail_len;
 
-  if((sp = strstr(line, search)) == NULL) {
+  if ((sp = strstr(line, search)) == NULL) {
     return;
   }
 
   search_len = strlen(search), replace_len = strlen(replace);
-  tail_len = strlen(sp+search_len);
+  tail_len = strlen(sp + search_len);
 
-  memmove(sp+replace_len,sp+search_len,tail_len+1);
+  memmove(sp + replace_len, sp + search_len, tail_len + 1);
   memcpy(sp, replace, replace_len);
 }
 
@@ -3403,11 +3536,12 @@ u_int32_t Utils::stringHash(const char *s) {
   const char *p = s;
   int pos = 0;
 
-  while(*p) {
+  while (*p) {
     hash += (*p) << pos;
     p++;
     pos += 8;
-    if(pos == 32) pos = 0;
+    if (pos == 32)
+      pos = 0;
   }
 
   return hash;
@@ -3418,7 +3552,7 @@ u_int32_t Utils::stringHash(const char *s) {
 /* Note: the returned IP address is in network byte order */
 u_int32_t Utils::getHostManagementIPv4Address() {
   int sock = socket(AF_INET, SOCK_DGRAM, 0);
-  const char* kGoogleDnsIp = "8.8.8.8";
+  const char *kGoogleDnsIp = "8.8.8.8";
   u_int16_t kDnsPort = 53;
   struct sockaddr_in serv;
   struct sockaddr_in name;
@@ -3430,22 +3564,22 @@ u_int32_t Utils::getHostManagementIPv4Address() {
   serv.sin_addr.s_addr = inet_addr(kGoogleDnsIp);
   serv.sin_port = htons(kDnsPort);
 
-  if((connect(sock, (const struct sockaddr*) &serv, sizeof(serv)) == 0)
-     && (getsockname(sock, (struct sockaddr*) &name, &namelen) == 0)) {
+  if ((connect(sock, (const struct sockaddr *)&serv, sizeof(serv)) == 0) &&
+      (getsockname(sock, (struct sockaddr *)&name, &namelen) == 0)) {
     me = name.sin_addr.s_addr;
   } else
     me = inet_addr("127.0.0.1");
 
   closesocket(sock);
 
-  return(me);
+  return (me);
 }
 
 /* ****************************************************** */
 
 bool Utils::isInterfaceUp(char *_ifname) {
 #ifdef WIN32
-  return(true);
+  return (true);
 #else
   char ifname[15];
   struct ifreq ifr;
@@ -3453,22 +3587,22 @@ bool Utils::isInterfaceUp(char *_ifname) {
 
   sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_IP);
 
-  if(sock == -1)
-    return(false);
+  if (sock == -1)
+    return (false);
 
   ifname2devname(_ifname, ifname, sizeof(ifname));
 
   memset(&ifr, 0, sizeof(ifr));
-  strncpy(ifr.ifr_name, ifname, sizeof(ifr.ifr_name)-1);
+  strncpy(ifr.ifr_name, ifname, sizeof(ifr.ifr_name) - 1);
 
-  if(ioctl(sock, SIOCGIFFLAGS, &ifr) < 0) {
+  if (ioctl(sock, SIOCGIFFLAGS, &ifr) < 0) {
     close(sock);
-    return(false);
+    return (false);
   }
 
   close(sock);
 
-  return(!!(ifr.ifr_flags & IFF_UP) ? true : false);
+  return (!!(ifr.ifr_flags & IFF_UP) ? true : false);
 #endif
 }
 
@@ -3477,72 +3611,83 @@ bool Utils::isInterfaceUp(char *_ifname) {
 bool Utils::maskHost(bool isLocalIP) {
   bool mask_host = false;
 
-  switch(ntop->getPrefs()->getHostMask()) {
+  switch (ntop->getPrefs()->getHostMask()) {
   case mask_local_hosts:
-    if(isLocalIP) mask_host = true;
+    if (isLocalIP)
+      mask_host = true;
     break;
 
   case mask_remote_hosts:
-    if(!isLocalIP) mask_host = true;
+    if (!isLocalIP)
+      mask_host = true;
     break;
 
   default:
     break;
   }
 
-  return(mask_host);
+  return (mask_host);
 }
 
 /* ****************************************************** */
 
 bool Utils::getCPULoad(cpu_load_stats *out) {
-#if !defined(__FreeBSD__) && !defined(__NetBSD__) & !defined(__OpenBSD__) && !defined(__APPLE__) && !defined(WIN32)
+#if !defined(__FreeBSD__) && !defined(__NetBSD__) & !defined(__OpenBSD__) &&   \
+    !defined(__APPLE__) && !defined(WIN32)
   float load;
   FILE *fp;
 
-  if((fp = fopen("/proc/loadavg", "r"))) {
-    if(fscanf(fp, "%f", &load) != 1)
+  if ((fp = fopen("/proc/loadavg", "r"))) {
+    if (fscanf(fp, "%f", &load) != 1)
       load = 0;
     fclose(fp);
 
     out->load = load;
 
-    return(true);
+    return (true);
   }
 #endif
 
-  return(false);
+  return (false);
 };
 
 /* ****************************************************** */
 
-void Utils::luaMeminfo(lua_State* vm) {
-#if !defined(__FreeBSD__) && !defined(__NetBSD__) & !defined(__OpenBSD__) && !defined(__APPLE__) && !defined(WIN32)
-  long unsigned int memtotal = 0, memfree = 0, buffers = 0, cached = 0, sreclaimable = 0, shmem = 0;
+void Utils::luaMeminfo(lua_State *vm) {
+#if !defined(__FreeBSD__) && !defined(__NetBSD__) & !defined(__OpenBSD__) &&   \
+    !defined(__APPLE__) && !defined(WIN32)
+  long unsigned int memtotal = 0, memfree = 0, buffers = 0, cached = 0,
+                    sreclaimable = 0, shmem = 0;
   long unsigned int mem_resident = 0, mem_virtual = 0;
   char *line = NULL;
   size_t len;
   int read;
   FILE *fp;
 
-  if(vm) {
-    if((fp = fopen("/proc/meminfo", "r"))) {
+  if (vm) {
+    if ((fp = fopen("/proc/meminfo", "r"))) {
       while ((read = getline(&line, &len, fp)) != -1) {
-	if(!strncmp(line, "MemTotal", strlen("MemTotal")) && sscanf(line, "%*s %lu kB", &memtotal))
-	  lua_push_uint64_table_entry(vm, "mem_total", memtotal);
-	else if(!strncmp(line, "MemFree", strlen("MemFree")) && sscanf(line, "%*s %lu kB", &memfree))
-	  lua_push_uint64_table_entry(vm, "mem_free", memfree);
-	else if(!strncmp(line, "Buffers", strlen("Buffers")) && sscanf(line, "%*s %lu kB", &buffers))
-	  lua_push_uint64_table_entry(vm, "mem_buffers", buffers);
-	else if(!strncmp(line, "Cached", strlen("Cached")) && sscanf(line, "%*s %lu kB", &cached))
-	  lua_push_uint64_table_entry(vm, "mem_cached", cached);
-	else if(!strncmp(line, "SReclaimable", strlen("SReclaimable")) && sscanf(line, "%*s %lu kB", &sreclaimable))
-	  lua_push_uint64_table_entry(vm, "mem_sreclaimable", sreclaimable);
-	else if(!strncmp(line, "Shmem", strlen("Shmem")) && sscanf(line, "%*s %lu kB", &shmem))
-	  lua_push_uint64_table_entry(vm, "mem_shmem", shmem);
+        if (!strncmp(line, "MemTotal", strlen("MemTotal")) &&
+            sscanf(line, "%*s %lu kB", &memtotal))
+          lua_push_uint64_table_entry(vm, "mem_total", memtotal);
+        else if (!strncmp(line, "MemFree", strlen("MemFree")) &&
+                 sscanf(line, "%*s %lu kB", &memfree))
+          lua_push_uint64_table_entry(vm, "mem_free", memfree);
+        else if (!strncmp(line, "Buffers", strlen("Buffers")) &&
+                 sscanf(line, "%*s %lu kB", &buffers))
+          lua_push_uint64_table_entry(vm, "mem_buffers", buffers);
+        else if (!strncmp(line, "Cached", strlen("Cached")) &&
+                 sscanf(line, "%*s %lu kB", &cached))
+          lua_push_uint64_table_entry(vm, "mem_cached", cached);
+        else if (!strncmp(line, "SReclaimable", strlen("SReclaimable")) &&
+                 sscanf(line, "%*s %lu kB", &sreclaimable))
+          lua_push_uint64_table_entry(vm, "mem_sreclaimable", sreclaimable);
+        else if (!strncmp(line, "Shmem", strlen("Shmem")) &&
+                 sscanf(line, "%*s %lu kB", &shmem))
+          lua_push_uint64_table_entry(vm, "mem_shmem", shmem);
       }
 
-      if(line) {
+      if (line) {
         free(line);
         line = NULL;
       }
@@ -3550,18 +3695,22 @@ void Utils::luaMeminfo(lua_State* vm) {
       fclose(fp);
 
       /* Equivalent to top utility mem used */
-      lua_push_uint64_table_entry(vm, "mem_used", memtotal - memfree - (buffers + cached + sreclaimable - shmem));
+      lua_push_uint64_table_entry(
+          vm, "mem_used",
+          memtotal - memfree - (buffers + cached + sreclaimable - shmem));
     }
 
-    if((fp = fopen("/proc/self/status", "r"))) {
-      while((read = getline(&line, &len, fp)) != -1) {
-          if(!strncmp(line, "VmRSS", strlen("VmRSS")) && sscanf(line, "%*s %lu kB", &mem_resident))
-            lua_push_uint64_table_entry(vm, "mem_ntopng_resident", mem_resident);
-          else if(!strncmp(line, "VmSize", strlen("VmSize")) && sscanf(line, "%*s %lu kB", &mem_virtual))
-            lua_push_uint64_table_entry(vm, "mem_ntopng_virtual", mem_virtual);
+    if ((fp = fopen("/proc/self/status", "r"))) {
+      while ((read = getline(&line, &len, fp)) != -1) {
+        if (!strncmp(line, "VmRSS", strlen("VmRSS")) &&
+            sscanf(line, "%*s %lu kB", &mem_resident))
+          lua_push_uint64_table_entry(vm, "mem_ntopng_resident", mem_resident);
+        else if (!strncmp(line, "VmSize", strlen("VmSize")) &&
+                 sscanf(line, "%*s %lu kB", &mem_virtual))
+          lua_push_uint64_table_entry(vm, "mem_ntopng_virtual", mem_virtual);
       }
 
-      if(line) {
+      if (line) {
         free(line);
         line = NULL;
       }
@@ -3574,56 +3723,58 @@ void Utils::luaMeminfo(lua_State* vm) {
 
 /* ****************************************************** */
 
-char* Utils::getInterfaceDescription(char *ifname, char *buf, int buf_len) {
+char *Utils::getInterfaceDescription(char *ifname, char *buf, int buf_len) {
   ntop_if_t *devpointer, *cur;
 
   snprintf(buf, buf_len, "%s", ifname);
 
-  if(!Utils::ntop_findalldevs(&devpointer)) {
-    for(cur = devpointer; cur; cur = cur->next) {
-      if(strcmp(cur->name, ifname) == 0) {
-	if(cur->description && cur->description[0])
-	  snprintf(buf, buf_len, "%s", cur->description);
-	break;
+  if (!Utils::ntop_findalldevs(&devpointer)) {
+    for (cur = devpointer; cur; cur = cur->next) {
+      if (strcmp(cur->name, ifname) == 0) {
+        if (cur->description && cur->description[0])
+          snprintf(buf, buf_len, "%s", cur->description);
+        break;
       }
     }
 
     Utils::ntop_freealldevs(devpointer);
   }
 
-  return(buf);
+  return (buf);
 }
 
 /* ****************************************************** */
 
-int Utils::bindSockToDevice(int sock, int family, const char* devicename) {
+int Utils::bindSockToDevice(int sock, int family, const char *devicename) {
 #ifdef WIN32
-  return(0);
+  return (0);
 #else
-  struct ifaddrs* pList = NULL;
-  struct ifaddrs* pAdapter = NULL;
-  struct ifaddrs* pAdapterFound = NULL;
+  struct ifaddrs *pList = NULL;
+  struct ifaddrs *pAdapter = NULL;
+  struct ifaddrs *pAdapterFound = NULL;
   int bindresult = -1;
 
   int result = getifaddrs(&pList);
 
-  if(result < 0)
+  if (result < 0)
     return -1;
 
   pAdapter = pList;
-  while(pAdapter) {
-    if((pAdapter->ifa_addr != NULL) && (pAdapter->ifa_name != NULL) && (family == pAdapter->ifa_addr->sa_family)) {
-      if(strcmp(pAdapter->ifa_name, devicename) == 0) {
-	pAdapterFound = pAdapter;
-	break;
+  while (pAdapter) {
+    if ((pAdapter->ifa_addr != NULL) && (pAdapter->ifa_name != NULL) &&
+        (family == pAdapter->ifa_addr->sa_family)) {
+      if (strcmp(pAdapter->ifa_name, devicename) == 0) {
+        pAdapterFound = pAdapter;
+        break;
       }
     }
 
     pAdapter = pAdapter->ifa_next;
   }
 
-  if(pAdapterFound != NULL) {
-    int addrsize = (family == AF_INET6) ? sizeof(sockaddr_in6) : sizeof(sockaddr_in);
+  if (pAdapterFound != NULL) {
+    int addrsize =
+        (family == AF_INET6) ? sizeof(sockaddr_in6) : sizeof(sockaddr_in);
     bindresult = ::bind(sock, pAdapterFound->ifa_addr, addrsize);
   }
 
@@ -3642,50 +3793,59 @@ int Utils::retainWriteCapabilities() {
 
   /* Add the capability of interest to the permitted capabilities  */
   caps = cap_get_proc();
-  if(cap_set_flag(caps, CAP_PERMITTED, num_cap, cap_values, CAP_SET) == -1)
-    ntop->getTrace()->traceEvent(TRACE_WARNING, "Capabilities cap_set_flag error: %s", strerror(errno));
+  if (cap_set_flag(caps, CAP_PERMITTED, num_cap, cap_values, CAP_SET) == -1)
+    ntop->getTrace()->traceEvent(
+        TRACE_WARNING, "Capabilities cap_set_flag error: %s", strerror(errno));
 
-  if(cap_set_flag(caps, CAP_INHERITABLE, num_cap, cap_values, CAP_SET) == -1)
-    ntop->getTrace()->traceEvent(TRACE_WARNING, "Capabilities cap_set_flag error: %s", strerror(errno));
+  if (cap_set_flag(caps, CAP_INHERITABLE, num_cap, cap_values, CAP_SET) == -1)
+    ntop->getTrace()->traceEvent(
+        TRACE_WARNING, "Capabilities cap_set_flag error: %s", strerror(errno));
 
-  if(cap_set_flag(caps, CAP_EFFECTIVE, num_cap, cap_values, CAP_SET) == -1)
-    ntop->getTrace()->traceEvent(TRACE_WARNING, "Capabilities cap_set_flag error: %s", strerror(errno));
+  if (cap_set_flag(caps, CAP_EFFECTIVE, num_cap, cap_values, CAP_SET) == -1)
+    ntop->getTrace()->traceEvent(
+        TRACE_WARNING, "Capabilities cap_set_flag error: %s", strerror(errno));
 
   rc = cap_set_proc(caps);
-  if(rc == 0) {
+  if (rc == 0) {
 #ifdef TRACE_CEPABILITIES
-    ntop->getTrace()->traceEvent(TRACE_NORMAL, "[CAPABILITIES] INITIAL SETUP [%s][num_cap: %u]",
-				 cap_to_text(caps, NULL), num_cap);
+    ntop->getTrace()->traceEvent(
+        TRACE_NORMAL, "[CAPABILITIES] INITIAL SETUP [%s][num_cap: %u]",
+        cap_to_text(caps, NULL), num_cap);
 #endif
 
     /* Tell the kernel to retain permitted capabilities */
-    if(prctl(PR_SET_KEEPCAPS, 1, 0, 0, 0) != 0) {
-      ntop->getTrace()->traceEvent(TRACE_WARNING,
-				   "Unable to retain permitted capabilities [%s]\n",
-				   strerror(errno));
+    if (prctl(PR_SET_KEEPCAPS, 1, 0, 0, 0) != 0) {
+      ntop->getTrace()->traceEvent(
+          TRACE_WARNING, "Unable to retain permitted capabilities [%s]\n",
+          strerror(errno));
       rc = -1;
     }
   } else {
-    ntop->getTrace()->traceEvent(TRACE_WARNING, "Capabilities cap_set_proc error: %s", strerror(errno));
+    ntop->getTrace()->traceEvent(
+        TRACE_WARNING, "Capabilities cap_set_proc error: %s", strerror(errno));
   }
 
-  if(cap_free(caps) == -1)
-    ntop->getTrace()->traceEvent(TRACE_WARNING, "Capabilities cap_free error: %s", strerror(errno));
+  if (cap_free(caps) == -1)
+    ntop->getTrace()->traceEvent(
+        TRACE_WARNING, "Capabilities cap_free error: %s", strerror(errno));
 
 #else
 #if !defined(__APPLE__) && !defined(__FreeBSD__)
   rc = -1;
-  ntop->getTrace()->traceEvent(TRACE_WARNING, "ntopng has not been compiled with libcap-dev");
-  ntop->getTrace()->traceEvent(TRACE_WARNING, "Network discovery and other privileged activities will fail");
+  ntop->getTrace()->traceEvent(TRACE_WARNING,
+                               "ntopng has not been compiled with libcap-dev");
+  ntop->getTrace()->traceEvent(
+      TRACE_WARNING,
+      "Network discovery and other privileged activities will fail");
 #endif
 #endif
 
-  return(rc);
+  return (rc);
 }
 
 /* ****************************************************** */
 
-#if !defined(__APPLE__) && !defined(__FreeBSD__)  
+#if !defined(__APPLE__) && !defined(__FreeBSD__)
 
 static Mutex capabilitiesMutex;
 
@@ -3701,41 +3861,48 @@ static int _setWriteCapabilities(int enable) {
     The capabilitiesMutex lock is used to avoid that two threads concurrently
     enable/disable capabilities
    */
-  if(enable)
+  if (enable)
     capabilitiesMutex.lock(__FILE__, __LINE__);
 
   caps = cap_get_proc();
-  if(caps) {
+  if (caps) {
 #ifdef TRACE_CEPABILITIES
-    ntop->getTrace()->traceEvent(TRACE_NORMAL, "[CAPABILITIES] BEFORE [enable: %u][%s]",
-				 enable, cap_to_text(caps, NULL));
+    ntop->getTrace()->traceEvent(TRACE_NORMAL,
+                                 "[CAPABILITIES] BEFORE [enable: %u][%s]",
+                                 enable, cap_to_text(caps, NULL));
 #endif
 
-    if(cap_set_flag(caps, CAP_EFFECTIVE, num_cap, cap_values, enable ? CAP_SET : CAP_CLEAR) == -1)
-      ntop->getTrace()->traceEvent(TRACE_WARNING, "Capabilities cap_set_flag error: %s", strerror(errno));
+    if (cap_set_flag(caps, CAP_EFFECTIVE, num_cap, cap_values,
+                     enable ? CAP_SET : CAP_CLEAR) == -1)
+      ntop->getTrace()->traceEvent(TRACE_WARNING,
+                                   "Capabilities cap_set_flag error: %s",
+                                   strerror(errno));
 
-    if(cap_set_proc(caps) == -1)
-      ntop->getTrace()->traceEvent(TRACE_WARNING, "Capabilities cap_set_proc error: %s [enable: %u]",
-				   strerror(errno), enable);
+    if (cap_set_proc(caps) == -1)
+      ntop->getTrace()->traceEvent(
+          TRACE_WARNING, "Capabilities cap_set_proc error: %s [enable: %u]",
+          strerror(errno), enable);
     else {
 #ifdef TRACE_CEPABILITIES
-      ntop->getTrace()->traceEvent(TRACE_NORMAL, "[CAPABILITIES] Capabilities %s [rc: %d]",
-				   enable ? "ENABLE" : "DISABLE", rc);
+      ntop->getTrace()->traceEvent(TRACE_NORMAL,
+                                   "[CAPABILITIES] Capabilities %s [rc: %d]",
+                                   enable ? "ENABLE" : "DISABLE", rc);
 #endif
     }
 
-    if(cap_free(caps) == -1)
-      ntop->getTrace()->traceEvent(TRACE_WARNING, "Capabilities cap_free error");
+    if (cap_free(caps) == -1)
+      ntop->getTrace()->traceEvent(TRACE_WARNING,
+                                   "Capabilities cap_free error");
   } else
     rc = -1;
 
-  if(!enable)
+  if (!enable)
     capabilitiesMutex.unlock(__FILE__, __LINE__);
 #else
   rc = -1;
 #endif
 
-  return(rc);
+  return (rc);
 }
 #endif
 
@@ -3761,12 +3928,12 @@ static int _setWriteCapabilities(int enable) {
 
 int Utils::gainWriteCapabilities() {
 #if !defined(__APPLE__) && !defined(__FreeBSD__)
-  if(ntop && !ntop->hasDroppedPrivileges())
-    return(0);
+  if (ntop && !ntop->hasDroppedPrivileges())
+    return (0);
 
-  return(_setWriteCapabilities(true));
+  return (_setWriteCapabilities(true));
 #else
-  return(0);
+  return (0);
 #endif
 }
 
@@ -3774,118 +3941,127 @@ int Utils::gainWriteCapabilities() {
 
 int Utils::dropWriteCapabilities() {
 #if !defined(__APPLE__) && !defined(__FreeBSD__)
-  if(ntop && !ntop->hasDroppedPrivileges())
-    return(0);
+  if (ntop && !ntop->hasDroppedPrivileges())
+    return (0);
 
-  return(_setWriteCapabilities(false));
+  return (_setWriteCapabilities(false));
 #else
-  return(0);
+  return (0);
 #endif
 }
 
 /* ******************************* */
 
 /* Return IP is network byte order */
-u_int32_t Utils::findInterfaceGatewayIPv4(const char* ifname) {
+u_int32_t Utils::findInterfaceGatewayIPv4(const char *ifname) {
 #ifndef WIN32
   char cmd[128];
   FILE *fp;
 
-  sprintf(cmd, "netstat -rn | grep '%s' | grep 'UG' | awk '{print $2}'", ifname);
+  sprintf(cmd, "netstat -rn | grep '%s' | grep 'UG' | awk '{print $2}'",
+          ifname);
 
-  if((fp = popen(cmd, "r")) != NULL) {
+  if ((fp = popen(cmd, "r")) != NULL) {
     char line[256];
     u_int32_t rc = 0;
 
-    if(fgets(line, sizeof(line), fp) != NULL)
+    if (fgets(line, sizeof(line), fp) != NULL)
       rc = inet_addr(line);
 
     pclose(fp);
-    return(rc);
+    return (rc);
   } else
 #endif
-    return(0);
+    return (0);
 }
 
 /* ******************************* */
 
-void Utils::maximizeSocketBuffer(int sock_fd, bool rx_buffer, u_int max_buf_mb) {
-  int i, rcv_buffsize_base, rcv_buffsize, max_buf_size = 1024 * max_buf_mb * 1024, debug = 0;
+void Utils::maximizeSocketBuffer(int sock_fd, bool rx_buffer,
+                                 u_int max_buf_mb) {
+  int i, rcv_buffsize_base, rcv_buffsize,
+      max_buf_size = 1024 * max_buf_mb * 1024, debug = 0;
   socklen_t len = sizeof(rcv_buffsize_base);
   int buf_type = rx_buffer ? SO_RCVBUF /* RX */ : SO_SNDBUF /* TX */;
 
-  if(getsockopt(sock_fd, SOL_SOCKET, buf_type, (char*)&rcv_buffsize_base, &len) < 0) {
-    ntop->getTrace()->traceEvent(TRACE_ERROR, "Unable to read socket receiver buffer size [%s]",
-				 strerror(errno));
+  if (getsockopt(sock_fd, SOL_SOCKET, buf_type, (char *)&rcv_buffsize_base,
+                 &len) < 0) {
+    ntop->getTrace()->traceEvent(
+        TRACE_ERROR, "Unable to read socket receiver buffer size [%s]",
+        strerror(errno));
     return;
   } else {
-    if(debug) ntop->getTrace()->traceEvent(TRACE_INFO, "Default socket %s buffer size is %d",
-					   buf_type == SO_RCVBUF ? "receive" : "send",
-					   rcv_buffsize_base);
+    if (debug)
+      ntop->getTrace()->traceEvent(
+          TRACE_INFO, "Default socket %s buffer size is %d",
+          buf_type == SO_RCVBUF ? "receive" : "send", rcv_buffsize_base);
   }
 
-  for(i=2;; i++) {
+  for (i = 2;; i++) {
     rcv_buffsize = i * rcv_buffsize_base;
-    if(rcv_buffsize > max_buf_size) break;
-
-    if(setsockopt(sock_fd, SOL_SOCKET, buf_type, (const char*)&rcv_buffsize, sizeof(rcv_buffsize)) < 0) {
-      if(debug) ntop->getTrace()->traceEvent(TRACE_ERROR, "Unable to set socket %s buffer size [%s]",
-					     buf_type == SO_RCVBUF ? "receive" : "send",
-					     strerror(errno));
+    if (rcv_buffsize > max_buf_size)
       break;
-    } else
-      if(debug) ntop->getTrace()->traceEvent(TRACE_INFO, "%s socket buffer size set %d",
-					     buf_type == SO_RCVBUF ? "Receive" : "Send",
-					     rcv_buffsize);
+
+    if (setsockopt(sock_fd, SOL_SOCKET, buf_type, (const char *)&rcv_buffsize,
+                   sizeof(rcv_buffsize)) < 0) {
+      if (debug)
+        ntop->getTrace()->traceEvent(
+            TRACE_ERROR, "Unable to set socket %s buffer size [%s]",
+            buf_type == SO_RCVBUF ? "receive" : "send", strerror(errno));
+      break;
+    } else if (debug)
+      ntop->getTrace()->traceEvent(TRACE_INFO, "%s socket buffer size set %d",
+                                   buf_type == SO_RCVBUF ? "Receive" : "Send",
+                                   rcv_buffsize);
   }
 }
 
 /* ****************************************************** */
 
-char* Utils::formatTraffic(float numBits, bool bits, char *buf) {
+char *Utils::formatTraffic(float numBits, bool bits, char *buf) {
   char unit;
 
-  if(bits)
+  if (bits)
     unit = 'b';
   else
     unit = 'B';
 
-  if(numBits < 1024) {
+  if (numBits < 1024) {
     snprintf(buf, 32, "%lu %c", (unsigned long)numBits, unit);
-  } else if(numBits < 1048576) {
-    snprintf(buf, 32, "%.2f K%c", (float)(numBits)/1024, unit);
+  } else if (numBits < 1048576) {
+    snprintf(buf, 32, "%.2f K%c", (float)(numBits) / 1024, unit);
   } else {
-    float tmpMBits = ((float)numBits)/1048576;
+    float tmpMBits = ((float)numBits) / 1048576;
 
-    if(tmpMBits < 1024) {
+    if (tmpMBits < 1024) {
       snprintf(buf, 32, "%.2f M%c", tmpMBits, unit);
     } else {
       tmpMBits /= 1024;
 
-      if(tmpMBits < 1024) {
-	snprintf(buf, 32, "%.2f G%c", tmpMBits, unit);
+      if (tmpMBits < 1024) {
+        snprintf(buf, 32, "%.2f G%c", tmpMBits, unit);
       } else {
-	snprintf(buf, 32, "%.2f T%c", (float)(tmpMBits)/1024, unit);
+        snprintf(buf, 32, "%.2f T%c", (float)(tmpMBits) / 1024, unit);
       }
     }
   }
 
-  return(buf);
+  return (buf);
 }
 
 /* ****************************************************** */
 
-char* Utils::formatPackets(float numPkts, char *buf) {
-  if(numPkts < 1000) {
+char *Utils::formatPackets(float numPkts, char *buf) {
+  if (numPkts < 1000) {
     snprintf(buf, 32, "%.2f", numPkts);
-  } else if(numPkts < 1000000) {
-    snprintf(buf, 32, "%.2f K", numPkts/1000);
+  } else if (numPkts < 1000000) {
+    snprintf(buf, 32, "%.2f K", numPkts / 1000);
   } else {
     numPkts /= 1000000;
     snprintf(buf, 32, "%.2f M", numPkts);
   }
 
-  return(buf);
+  return (buf);
 }
 
 /* ****************************************************** */
@@ -3893,16 +4069,16 @@ char* Utils::formatPackets(float numPkts, char *buf) {
 bool Utils::str2DetailsLevel(const char *details, DetailsLevel *out) {
   bool rv = false;
 
-  if(!strcmp(details, "normal")) {
+  if (!strcmp(details, "normal")) {
     *out = details_normal;
     rv = true;
-  } else if(!strcmp(details, "high")) {
+  } else if (!strcmp(details, "high")) {
     *out = details_high;
     rv = true;
-  } else if(!strcmp(details, "higher")) {
+  } else if (!strcmp(details, "higher")) {
     *out = details_higher;
     rv = true;
-  } else if(!strcmp(details, "max")) {
+  } else if (!strcmp(details, "max")) {
     *out = details_max;
     rv = true;
   }
@@ -3913,28 +4089,30 @@ bool Utils::str2DetailsLevel(const char *details, DetailsLevel *out) {
 /* ****************************************************** */
 
 bool Utils::isCriticalNetworkProtocol(u_int16_t protocol_id) {
-  return (protocol_id == NDPI_PROTOCOL_DNS) || (protocol_id == NDPI_PROTOCOL_DHCP);
+  return (protocol_id == NDPI_PROTOCOL_DNS) ||
+         (protocol_id == NDPI_PROTOCOL_DHCP);
 }
 
 /* ****************************************************** */
 
-u_int32_t Utils::roundTime(u_int32_t now, u_int32_t rounder, int32_t offset_from_utc) {
+u_int32_t Utils::roundTime(u_int32_t now, u_int32_t rounder,
+                           int32_t offset_from_utc) {
   /* Align result to rounder. Operations intrinsically work in UTC. */
   u_int32_t result = now - (now % rounder);
   result += rounder;
 
   /* Aling now to localtime using the local offset from UTC.
-     So for example UTC+1, which has a +3600 offset from UTC, will have the local time
-     one hour behind, that is, 10PM UTC are 9PM UTC+1.
-     For an UTC-1, which has a -3600 offset from UTC, the local time is one hour ahead, that is,
-     10PM UTC are 11PM UTC-1.
-     Hence, in practice, a negative offset needs to be added whereas a positive offset needs to be
-     substracted. */
+     So for example UTC+1, which has a +3600 offset from UTC, will have the
+     local time one hour behind, that is, 10PM UTC are 9PM UTC+1. For an UTC-1,
+     which has a -3600 offset from UTC, the local time is one hour ahead, that
+     is, 10PM UTC are 11PM UTC-1. Hence, in practice, a negative offset needs to
+     be added whereas a positive offset needs to be substracted. */
   result += -offset_from_utc;
 
-  /* Don't allow results which are earlier than now. Adjust using rounder until now is reached.
-     This can happen when result has been adjusted with a positive offset from UTC. */
-  while(result <= now)
+  /* Don't allow results which are earlier than now. Adjust using rounder until
+     now is reached. This can happen when result has been adjusted with a
+     positive offset from UTC. */
+  while (result <= now)
     result += rounder;
 
   return result;
@@ -3952,32 +4130,38 @@ u_int32_t Utils::roundTime(u_int32_t now, u_int32_t rounder, int32_t offset_from
   now+1y   (year)
 */
 u_int32_t Utils::parsetime(char *str) {
-  if(!strncmp(str, "now", 3)) {
+  if (!strncmp(str, "now", 3)) {
     char op = str[3];
     int v;
     char what[64];
     u_int32_t ret = time(NULL);
 
-    if(op == '\0')
-      return(ret);
-    else if(sscanf(&str[4], "%d%s", &v, what) == 2) {
-      if(!strcmp(what, "h"))        v *= 3600;
-      else if(!strcmp(what, "d"))   v *= 3600*24;
-      else if(!strcmp(what, "w"))   v *= 3600*24*7;
-      else if(!strcmp(what, "m"))   v *= 3600*24*7*30;
-      else if(!strcmp(what, "min")) v *= 60;
-      else if(!strcmp(what, "y"))   v *= 3600*24*7*365;
+    if (op == '\0')
+      return (ret);
+    else if (sscanf(&str[4], "%d%s", &v, what) == 2) {
+      if (!strcmp(what, "h"))
+        v *= 3600;
+      else if (!strcmp(what, "d"))
+        v *= 3600 * 24;
+      else if (!strcmp(what, "w"))
+        v *= 3600 * 24 * 7;
+      else if (!strcmp(what, "m"))
+        v *= 3600 * 24 * 7 * 30;
+      else if (!strcmp(what, "min"))
+        v *= 60;
+      else if (!strcmp(what, "y"))
+        v *= 3600 * 24 * 7 * 365;
 
-      if(op == '-')
-	ret -= v;
+      if (op == '-')
+        ret -= v;
       else
-	ret += v;
+        ret += v;
 
-      return(ret);
+      return (ret);
     } else
-      return(0);
+      return (0);
   } else
-    return(atol(str));
+    return (atol(str));
 }
 
 /* ************************************************* */
@@ -3986,26 +4170,26 @@ u_int64_t Utils::mac2int(const u_int8_t *mac) {
   u_int64_t m = 0;
 
   memcpy(&m, mac, 6);
-  return(m);
+  return (m);
 }
 
 /* ************************************************* */
 
-u_int8_t* Utils::int2mac(u_int64_t mac, u_int8_t *buf) {
+u_int8_t *Utils::int2mac(u_int64_t mac, u_int8_t *buf) {
   memcpy(buf, &mac, 6);
   buf[6] = buf[7] = '\0';
-  return(buf);
+  return (buf);
 }
-
 
 /* ************************************************* */
 
-void Utils::init_pcap_header(struct pcap_file_header * const h, int linktype, int snaplen, bool nsec) {
+void Utils::init_pcap_header(struct pcap_file_header *const h, int linktype,
+                             int snaplen, bool nsec) {
   /*
    * [0000000] c3d4 a1b2 0002 0004 0000 0000 0000 0000
    * [0000010] 05ea 0000 0001 0000
    */
-  if(!h)
+  if (!h)
     return;
 
   memset(h, 0, sizeof(*h));
@@ -4014,23 +4198,23 @@ void Utils::init_pcap_header(struct pcap_file_header * const h, int linktype, in
   h->version_major = 2;
   h->version_minor = 4;
   h->thiszone = 0;
-  h->sigfigs  = 0;
-  h->snaplen  = snaplen;
+  h->sigfigs = 0;
+  h->snaplen = snaplen;
   h->linktype = linktype;
 }
 
 /* ****************************************************** */
 
-void Utils::listInterfaces(lua_State* vm) {
+void Utils::listInterfaces(lua_State *vm) {
   ntop_if_t *devpointer, *cur;
 
-  if(Utils::ntop_findalldevs(&devpointer) != 0)
+  if (Utils::ntop_findalldevs(&devpointer) != 0)
     return; /* Error */
 
-  for(cur = devpointer; cur; cur = cur->next) {
+  for (cur = devpointer; cur; cur = cur->next) {
     lua_newtable(vm);
 
-    if(cur->name) {
+    if (cur->name) {
       struct sockaddr_in sin;
       struct sockaddr_in6 sin6;
       char buf[64];
@@ -4041,14 +4225,16 @@ void Utils::listInterfaces(lua_State* vm) {
       sin.sin_family = AF_INET;
       sin.sin_addr.s_addr = Utils::readIPv4(cur->name);
 
-      if(sin.sin_addr.s_addr != 0)
-        lua_push_str_table_entry(vm, "ipv4", Utils::intoaV4(ntohl(sin.sin_addr.s_addr), buf, sizeof(buf)));
+      if (sin.sin_addr.s_addr != 0)
+        lua_push_str_table_entry(
+            vm, "ipv4",
+            Utils::intoaV4(ntohl(sin.sin_addr.s_addr), buf, sizeof(buf)));
 
 #ifndef WIN32
       sin6.sin6_family = AF_INET6;
-      if(Utils::readIPv6(cur->name, &sin6.sin6_addr)) {
-        struct ndpi_in6_addr* ip6 = (struct ndpi_in6_addr*)&sin6.sin6_addr;
-        char* ip = Utils::intoaV6(*ip6, 128, buf, sizeof(buf));
+      if (Utils::readIPv6(cur->name, &sin6.sin6_addr)) {
+        struct ndpi_in6_addr *ip6 = (struct ndpi_in6_addr *)&sin6.sin6_addr;
+        char *ip = Utils::intoaV6(*ip6, 128, buf, sizeof(buf));
 
         lua_push_str_table_entry(vm, "ipv6", ip);
       }
@@ -4072,13 +4258,12 @@ char *Utils::ntop_lookupdev(char *ifname_out, int ifname_size) {
 
   ifname_out[0] = '\0';
 
-  if(pcap_findalldevs(&pdevs, ebuf) != 0)
+  if (pcap_findalldevs(&pdevs, ebuf) != 0)
     goto err;
 
   pdev = pdevs;
   while (pdev != NULL) {
-    if(Utils::validInterface(pdev) &&
-       Utils::isInterfaceUp(pdev->name)) {
+    if (Utils::validInterface(pdev) && Utils::isInterfaceUp(pdev->name)) {
       snprintf(ifname_out, ifname_size, "%s", pdev->name);
       found = true;
       break;
@@ -4088,10 +4273,9 @@ char *Utils::ntop_lookupdev(char *ifname_out, int ifname_size) {
 
   pcap_freealldevs(pdevs);
 
- err:
+err:
   return found ? ifname_out : NULL;
 }
-
 
 /* ****************************************************** */
 
@@ -4104,12 +4288,12 @@ int Utils::ntop_findalldevs(ntop_if_t **alldevsp) {
   ntop_if_t *tail = NULL;
   ntop_if_t *cur;
 
-  if(!alldevsp)
+  if (!alldevsp)
     return -1;
 
   *alldevsp = NULL;
 
-  if(pcap_findalldevs(&pdevs, ebuf) != 0)
+  if (pcap_findalldevs(&pdevs, ebuf) != 0)
     return -1;
 
 #ifdef HAVE_PF_RING
@@ -4121,24 +4305,29 @@ int Utils::ntop_findalldevs(ntop_if_t **alldevsp) {
     /* merge with info from pcap */
     pdev = pdevs;
     while (pdev != NULL) {
-      if(pfdev->system_name && strcmp(pfdev->system_name, pdev->name) == 0)
+      if (pfdev->system_name && strcmp(pfdev->system_name, pdev->name) == 0)
         break;
       pdev = pdev->next;
     }
 
-    if(pdev == NULL /* not a standard interface (e.g. fpga) */
-        || (Utils::isInterfaceUp(pfdev->system_name) && Utils::validInterface(pdev))) {
-      cur = (ntop_if_t*)calloc(1, sizeof(ntop_if_t));
+    if (pdev == NULL /* not a standard interface (e.g. fpga) */
+        || (Utils::isInterfaceUp(pfdev->system_name) &&
+            Utils::validInterface(pdev))) {
+      cur = (ntop_if_t *)calloc(1, sizeof(ntop_if_t));
 
-      if(cur) {
-	cur->name = strdup(pfdev->system_name ? pfdev->system_name : pfdev->name);
-	cur->description = strdup((pdev && pdev->description) ? pdev->description : "");
-	cur->module = strdup(pfdev->module);
-	cur->license = pfdev->license;
+      if (cur) {
+        cur->name =
+            strdup(pfdev->system_name ? pfdev->system_name : pfdev->name);
+        cur->description =
+            strdup((pdev && pdev->description) ? pdev->description : "");
+        cur->module = strdup(pfdev->module);
+        cur->license = pfdev->license;
 
-	if(!*alldevsp) *alldevsp = cur;
-	if(tail) tail->next = cur;
-	tail = cur;
+        if (!*alldevsp)
+          *alldevsp = cur;
+        if (tail)
+          tail->next = cur;
+        tail = cur;
       }
     }
 
@@ -4148,30 +4337,31 @@ int Utils::ntop_findalldevs(ntop_if_t **alldevsp) {
 
   pdev = pdevs;
   while (pdev != NULL) {
-    if(Utils::validInterface(pdev) &&
-        Utils::isInterfaceUp(pdev->name)) {
+    if (Utils::validInterface(pdev) && Utils::isInterfaceUp(pdev->name)) {
 
 #ifdef HAVE_PF_RING
       /* check if already listed */
       pfdev = pfdevs;
       while (pfdev != NULL) {
-        if(strcmp(pfdev->system_name, pdev->name) == 0)
+        if (strcmp(pfdev->system_name, pdev->name) == 0)
           break;
         pfdev = pfdev->next;
       }
 
-      if(pfdev == NULL) {
+      if (pfdev == NULL) {
 #endif
-	cur = (ntop_if_t*)calloc(1, sizeof(ntop_if_t));
+        cur = (ntop_if_t *)calloc(1, sizeof(ntop_if_t));
 
-	if(cur) {
-	  cur->name = strdup(pdev->name);
-	  cur->description = strdup(pdev->description ? pdev->description : "");
+        if (cur) {
+          cur->name = strdup(pdev->name);
+          cur->description = strdup(pdev->description ? pdev->description : "");
 
-	  if(!*alldevsp) *alldevsp = cur;
-	  if(tail) tail->next = cur;
-	  tail = cur;
-	}
+          if (!*alldevsp)
+            *alldevsp = cur;
+          if (tail)
+            tail->next = cur;
+          tail = cur;
+        }
 #ifdef HAVE_PF_RING
       }
 #endif
@@ -4193,13 +4383,16 @@ int Utils::ntop_findalldevs(ntop_if_t **alldevsp) {
 void Utils::ntop_freealldevs(ntop_if_t *alldevsp) {
   ntop_if_t *cur;
 
-  while(alldevsp) {
+  while (alldevsp) {
     cur = alldevsp;
     alldevsp = alldevsp->next;
 
-    if(cur->name) free(cur->name);
-    if(cur->description) free(cur->description);
-    if(cur->module) free(cur->module);
+    if (cur->name)
+      free(cur->name);
+    if (cur->description)
+      free(cur->description);
+    if (cur->module)
+      free(cur->module);
 
     free(cur);
   }
@@ -4209,9 +4402,8 @@ void Utils::ntop_freealldevs(ntop_if_t *alldevsp) {
 
 bool Utils::validInterfaceName(const char *name) {
 #if not defined(WIN32)
-  if(!name
-     || !strncmp(name, "virbr", 5) /* Ignore virtual interfaces */
-     )
+  if (!name || !strncmp(name, "virbr", 5) /* Ignore virtual interfaces */
+  )
     return false;
 
   /*
@@ -4224,12 +4416,9 @@ bool Utils::validInterfaceName(const char *name) {
 
      Hence, a valid interface name must have strict requirements.
   */
-  for(int i = 0; name[i] != '\0'; i++) {
-    if(!isalnum(name[i])
-       && name[i] != '@'
-       && name[i] != '-'
-       && name[i] != ':'
-       && name[i] != '_')
+  for (int i = 0; name[i] != '\0'; i++) {
+    if (!isalnum(name[i]) && name[i] != '@' && name[i] != '-' &&
+        name[i] != ':' && name[i] != '_')
       return false;
   }
 #endif
@@ -4240,11 +4429,15 @@ bool Utils::validInterfaceName(const char *name) {
 /* ****************************************************** */
 
 bool Utils::validInterfaceDescription(const char *description) {
-  if(description &&
-     (strstr(description, "PPP")            /* Avoid to use the PPP interface              */
-      || strstr(description, "dialup")      /* Avoid to use the dialup interface           */
-      || strstr(description, "ICSHARE")     /* Avoid to use the internet sharing interface */
-      || strstr(description, "NdisWan"))) { /* Avoid to use the internet sharing interface */
+  if (description &&
+      (strstr(description, "PPP") /* Avoid to use the PPP interface */
+       ||
+       strstr(description, "dialup") /* Avoid to use the dialup interface */
+       || strstr(description,
+                 "ICSHARE") /* Avoid to use the internet sharing interface */
+       ||
+       strstr(description,
+              "NdisWan"))) { /* Avoid to use the internet sharing interface */
     return false;
   }
 
@@ -4254,19 +4447,21 @@ bool Utils::validInterfaceDescription(const char *description) {
 /* ****************************************************** */
 
 bool Utils::validInterface(const ntop_if_t *ntop_if) {
-  return Utils::validInterfaceName(ntop_if->name) && Utils::validInterfaceDescription(ntop_if->description);
+  return Utils::validInterfaceName(ntop_if->name) &&
+         Utils::validInterfaceDescription(ntop_if->description);
 }
 
 /* ****************************************************** */
 
 bool Utils::validInterface(const pcap_if_t *pcap_if) {
-  return Utils::validInterfaceName(pcap_if->name) && Utils::validInterfaceDescription(pcap_if->description);
+  return Utils::validInterfaceName(pcap_if->name) &&
+         Utils::validInterfaceDescription(pcap_if->description);
 }
 
 /* ****************************************************** */
 
-const char* Utils::policySource2Str(L7PolicySource_t policy_source) {
-  switch(policy_source) {
+const char *Utils::policySource2Str(L7PolicySource_t policy_source) {
+  switch (policy_source) {
   case policy_source_pool:
     return "policy_source_pool";
   case policy_source_protocol:
@@ -4284,8 +4479,8 @@ const char* Utils::policySource2Str(L7PolicySource_t policy_source) {
 
 /* ****************************************************** */
 
-const char* Utils::captureDirection2Str(pcap_direction_t dir) {
-  switch(dir) {
+const char *Utils::captureDirection2Str(pcap_direction_t dir) {
+  switch (dir) {
   case PCAP_D_IN:
     return "in";
   case PCAP_D_OUT:
@@ -4298,25 +4493,28 @@ const char* Utils::captureDirection2Str(pcap_direction_t dir) {
 
 /* ****************************************************** */
 
-bool Utils::readInterfaceStats(const char *ifname, ProtoStats *in_stats, ProtoStats *out_stats) {
+bool Utils::readInterfaceStats(const char *ifname, ProtoStats *in_stats,
+                               ProtoStats *out_stats) {
   bool rv = false;
 #ifndef WIN32
   FILE *f = fopen("/proc/net/dev", "r");
 
-  if(f) {
+  if (f) {
     char line[512];
-    char to_find[IFNAMSIZ+2];
+    char to_find[IFNAMSIZ + 2];
     snprintf(to_find, sizeof(to_find), "%s:", ifname);
 
-    while(fgets(line, sizeof(line), f)) {
+    while (fgets(line, sizeof(line), f)) {
       long long unsigned int in_bytes, out_bytes, in_packets, out_packets;
 
-      if(strstr(line, to_find) &&
-         sscanf(line, "%*[^:]: %llu %llu %*u %*u %*u %*u %*u %*u %llu %llu",
-           &in_bytes, &in_packets, &out_bytes, &out_packets) == 4) {
-        ntop->getTrace()->traceEvent(TRACE_DEBUG,
-          "iface_counters: in_bytes=%llu in_packets=%llu - out_bytes=%llu out_packets=%llu",
-          in_bytes, in_packets, out_bytes, out_packets);
+      if (strstr(line, to_find) &&
+          sscanf(line, "%*[^:]: %llu %llu %*u %*u %*u %*u %*u %*u %llu %llu",
+                 &in_bytes, &in_packets, &out_bytes, &out_packets) == 4) {
+        ntop->getTrace()->traceEvent(
+            TRACE_DEBUG,
+            "iface_counters: in_bytes=%llu in_packets=%llu - out_bytes=%llu "
+            "out_packets=%llu",
+            in_bytes, in_packets, out_bytes, out_packets);
         in_stats->setBytes(in_bytes);
         in_stats->setPkts(in_packets);
         out_stats->setBytes(out_bytes);
@@ -4327,7 +4525,7 @@ bool Utils::readInterfaceStats(const char *ifname, ProtoStats *in_stats, ProtoSt
     }
   }
 
-  if(f)
+  if (f)
     fclose(f);
 #endif
 
@@ -4337,10 +4535,10 @@ bool Utils::readInterfaceStats(const char *ifname, ProtoStats *in_stats, ProtoSt
 /* ****************************************************** */
 
 bool Utils::shouldResolveHost(const char *host_ip) {
-  if(!ntop->getPrefs()->is_dns_resolution_enabled())
+  if (!ntop->getPrefs()->is_dns_resolution_enabled())
     return false;
 
-  if(!ntop->getPrefs()->is_dns_resolution_enabled_for_all_hosts()) {
+  if (!ntop->getPrefs()->is_dns_resolution_enabled_for_all_hosts()) {
     /*
       In case only local addresses need to be resolved, skip
       remote hosts
@@ -4348,8 +4546,8 @@ bool Utils::shouldResolveHost(const char *host_ip) {
     IpAddress ip;
     int16_t network_id;
 
-    ip.set((char*)host_ip);
-    if(!ip.isLocalHost(&network_id))
+    ip.set((char *)host_ip);
+    if (!ip.isLocalHost(&network_id))
       return false;
   }
 
@@ -4363,11 +4561,12 @@ bool Utils::mg_write_retry(struct mg_connection *conn, u_char *b, int len) {
   time_t max_retry = 1000;
 
   while (!ntop->getGlobals()->isShutdown() && --max_retry) {
-    ret = mg_write_async(conn, &b[sent], len-sent);
-    if(ret < 0)
+    ret = mg_write_async(conn, &b[sent], len - sent);
+    if (ret < 0)
       return false;
     sent += ret;
-    if(sent == len) return true;
+    if (sent == len)
+      return true;
     _usleep(100);
   }
 
@@ -4381,20 +4580,20 @@ bool Utils::parseAuthenticatorJson(HTTPAuthenticator *auth, char *content) {
   enum json_tokener_error jerr = json_tokener_success;
 
   o = json_tokener_parse_verbose(content, &jerr);
-  if(o) {
+  if (o) {
     json_object *w;
 
-    if(json_object_object_get_ex(o, "admin", &w))
-      auth->admin  = (bool)json_object_get_boolean(w);
+    if (json_object_object_get_ex(o, "admin", &w))
+      auth->admin = (bool)json_object_get_boolean(w);
 
-    if(json_object_object_get_ex(o, "allowedIfname", &w))
-      auth->allowedIfname  = strdup((char *)json_object_get_string(w));
+    if (json_object_object_get_ex(o, "allowedIfname", &w))
+      auth->allowedIfname = strdup((char *)json_object_get_string(w));
 
-    if(json_object_object_get_ex(o, "allowedNets", &w))
-      auth->allowedNets  = strdup((char *)json_object_get_string(w));
+    if (json_object_object_get_ex(o, "allowedNets", &w))
+      auth->allowedNets = strdup((char *)json_object_get_string(w));
 
-    if(json_object_object_get_ex(o, "language", &w))
-      auth->language  = strdup((char *)json_object_get_string(w));
+    if (json_object_object_get_ex(o, "language", &w))
+      auth->language = strdup((char *)json_object_get_string(w));
 
     json_object_put(o);
     return true;
@@ -4405,119 +4604,135 @@ bool Utils::parseAuthenticatorJson(HTTPAuthenticator *auth, char *content) {
 /* ****************************************************** */
 
 void Utils::freeAuthenticator(HTTPAuthenticator *auth) {
-  if(auth == NULL)
+  if (auth == NULL)
     return;
-  if(auth->allowedIfname) free(auth->allowedIfname);
-  if(auth->allowedNets) free(auth->allowedNets);
-  if(auth->language) free(auth->language);
+  if (auth->allowedIfname)
+    free(auth->allowedIfname);
+  if (auth->allowedNets)
+    free(auth->allowedNets);
+  if (auth->language)
+    free(auth->language);
 }
 
 /* ****************************************************** */
 
-DetailsLevel Utils::bool2DetailsLevel(bool max, bool higher, bool normal){
-  if(max){
+DetailsLevel Utils::bool2DetailsLevel(bool max, bool higher, bool normal) {
+  if (max) {
     return details_max;
-  } else if(higher){
+  } else if (higher) {
     return details_higher;
-  } else if(normal){
+  } else if (normal) {
     return details_normal;
-  }
-  else{
+  } else {
     return details_high;
   }
 }
 
 /* ****************************************************** */
 
-void Utils::containerInfoLua(lua_State *vm, const ContainerInfo * const cont) {
+void Utils::containerInfoLua(lua_State *vm, const ContainerInfo *const cont) {
   lua_newtable(vm);
 
-  if(cont->id)       lua_push_str_table_entry(vm, "id", cont->id);
-  if(cont->data_type == container_info_data_type_k8s) {
-    if(cont->name) lua_push_str_table_entry(vm, "k8s.name", cont->name);
-    if(cont->data.k8s.pod)  lua_push_str_table_entry(vm, "k8s.pod", cont->data.k8s.pod);
-    if(cont->data.k8s.ns)   lua_push_str_table_entry(vm, "k8s.ns", cont->data.k8s.ns);
-  } else if(cont->data_type == container_info_data_type_docker) {
-    if(cont->name) lua_push_str_table_entry(vm, "docker.name", cont->name);
+  if (cont->id)
+    lua_push_str_table_entry(vm, "id", cont->id);
+  if (cont->data_type == container_info_data_type_k8s) {
+    if (cont->name)
+      lua_push_str_table_entry(vm, "k8s.name", cont->name);
+    if (cont->data.k8s.pod)
+      lua_push_str_table_entry(vm, "k8s.pod", cont->data.k8s.pod);
+    if (cont->data.k8s.ns)
+      lua_push_str_table_entry(vm, "k8s.ns", cont->data.k8s.ns);
+  } else if (cont->data_type == container_info_data_type_docker) {
+    if (cont->name)
+      lua_push_str_table_entry(vm, "docker.name", cont->name);
   }
 }
 
 /* ****************************************************** */
 
-const char* Utils::periodicityToScriptName(ScriptPeriodicity p) {
-  switch(p) {
-  case aperiodic_script:    return("aperiodic");
-  case minute_script:       return("min");
-  case five_minute_script:  return("5mins");
-  case hour_script:         return("hour");
-  case day_script:          return("day");
+const char *Utils::periodicityToScriptName(ScriptPeriodicity p) {
+  switch (p) {
+  case aperiodic_script:
+    return ("aperiodic");
+  case minute_script:
+    return ("min");
+  case five_minute_script:
+    return ("5mins");
+  case hour_script:
+    return ("hour");
+  case day_script:
+    return ("day");
   default:
-    ntop->getTrace()->traceEvent(TRACE_WARNING, "Unknown periodicity value: %d", p);
-    return("");
+    ntop->getTrace()->traceEvent(TRACE_WARNING, "Unknown periodicity value: %d",
+                                 p);
+    return ("");
   }
 }
 
 /* ****************************************************** */
 
 int Utils::periodicityToSeconds(ScriptPeriodicity p) {
-  switch(p) {
-  case aperiodic_script:    return(0);
-  case minute_script:       return(60);
-  case five_minute_script:  return(300);
-  case hour_script:         return(3600);
-  case day_script:          return(86400);
+  switch (p) {
+  case aperiodic_script:
+    return (0);
+  case minute_script:
+    return (60);
+  case five_minute_script:
+    return (300);
+  case hour_script:
+    return (3600);
+  case day_script:
+    return (86400);
   default:
-    ntop->getTrace()->traceEvent(TRACE_WARNING, "Unknown periodicity value: %d", p);
-    return(0);
+    ntop->getTrace()->traceEvent(TRACE_WARNING, "Unknown periodicity value: %d",
+                                 p);
+    return (0);
   }
 }
 
 /* ****************************************************** */
 
 /* TODO move into nDPI */
-OSType Utils::getOSFromFingerprint(const char *fingerprint, const char*manuf, DeviceType devtype) {
+OSType Utils::getOSFromFingerprint(const char *fingerprint, const char *manuf,
+                                   DeviceType devtype) {
   /*
     Inefficient with many signatures but ok for the
     time being that we have little data
   */
-  if(!fingerprint)
-    return(os_unknown);
+  if (!fingerprint)
+    return (os_unknown);
 
-  if(!strcmp(fingerprint,      "017903060F77FC"))
-    return(os_ios);
-  else if((!strcmp(fingerprint, "017903060F77FC5F2C2E"))
-	  || (!strcmp(fingerprint, "0103060F775FFC2C2E2F"))
-	  || (!strcmp(fingerprint, "0103060F775FFC2C2E"))
-	  )
-    return(os_macos);
-  else if((!strcmp(fingerprint, "0103060F1F212B2C2E2F79F9FC"))
-	  || (!strcmp(fingerprint, "010F03062C2E2F1F2179F92B"))
-	  )
-    return(os_windows);
-  else if((!strcmp(fingerprint, "0103060C0F1C2A"))
-	  || (!strcmp(fingerprint, "011C02030F06770C2C2F1A792A79F921FC2A"))
-	  )
-    return(os_linux); /* Android is also linux */
-  else if((!strcmp(fingerprint, "0603010F0C2C51452B1242439607"))
-	  || (!strcmp(fingerprint, "01032C06070C0F16363A3B45122B7751999A"))
-	  )
-    return(os_laserjet);
-  else if(!strcmp(fingerprint, "0102030F060C2C"))
-    return(os_apple_airport);
-  else if(!strcmp(fingerprint, "01792103060F1C333A3B77"))
-    return(os_android);
+  if (!strcmp(fingerprint, "017903060F77FC"))
+    return (os_ios);
+  else if ((!strcmp(fingerprint, "017903060F77FC5F2C2E")) ||
+           (!strcmp(fingerprint, "0103060F775FFC2C2E2F")) ||
+           (!strcmp(fingerprint, "0103060F775FFC2C2E")))
+    return (os_macos);
+  else if ((!strcmp(fingerprint, "0103060F1F212B2C2E2F79F9FC")) ||
+           (!strcmp(fingerprint, "010F03062C2E2F1F2179F92B")))
+    return (os_windows);
+  else if ((!strcmp(fingerprint, "0103060C0F1C2A")) ||
+           (!strcmp(fingerprint, "011C02030F06770C2C2F1A792A79F921FC2A")))
+    return (os_linux); /* Android is also linux */
+  else if ((!strcmp(fingerprint, "0603010F0C2C51452B1242439607")) ||
+           (!strcmp(fingerprint, "01032C06070C0F16363A3B45122B7751999A")))
+    return (os_laserjet);
+  else if (!strcmp(fingerprint, "0102030F060C2C"))
+    return (os_apple_airport);
+  else if (!strcmp(fingerprint, "01792103060F1C333A3B77"))
+    return (os_android);
 
   /* Below you can find ambiguous signatures */
-  if(manuf) {
-    if(!strcmp(fingerprint, "0103063633")) {
-      if(strstr(manuf, "Apple"))
-        return(os_macos);
-      else if(devtype == device_unknown)
-        return(os_windows);
+  if (manuf) {
+    if (!strcmp(fingerprint, "0103063633")) {
+      if (strstr(manuf, "Apple"))
+        return (os_macos);
+      else if (devtype == device_unknown)
+        return (os_windows);
     }
   }
 
-  return(os_unknown);
+  return (os_unknown);
 }
 /*
   Missing OS mapping
@@ -4530,49 +4745,50 @@ OSType Utils::getOSFromFingerprint(const char *fingerprint, const char*manuf, De
 
 /* TODO move into nDPI? */
 DeviceType Utils::getDeviceTypeFromOsDetail(const char *os) {
-  if(strcasestr(os, "iPhone")
-      || strcasestr(os, "Android")
-      || strcasestr(os, "mobile"))
-    return(device_phone);
-  else if(strcasestr(os, "Mac OS")
-      || strcasestr(os, "Windows")
-      || strcasestr(os, "Linux"))
-    return(device_workstation);
-  else if(strcasestr(os, "iPad") || strcasestr(os, "tablet"))
-    return(device_tablet);
+  if (strcasestr(os, "iPhone") || strcasestr(os, "Android") ||
+      strcasestr(os, "mobile"))
+    return (device_phone);
+  else if (strcasestr(os, "Mac OS") || strcasestr(os, "Windows") ||
+           strcasestr(os, "Linux"))
+    return (device_workstation);
+  else if (strcasestr(os, "iPad") || strcasestr(os, "tablet"))
+    return (device_tablet);
 
-  return(device_unknown);
+  return (device_unknown);
 }
 
 /* Bitmap functions */
 bool Utils::bitmapIsSet(u_int64_t bitmap, u_int8_t v) {
-  if(v > 64) {
-    ntop->getTrace()->traceEvent(TRACE_WARNING, "INTERNAL ERROR: bitmapIsSet out of range (%u > %u)",
-				 v, sizeof(bitmap));
-    return(false);
+  if (v > 64) {
+    ntop->getTrace()->traceEvent(
+        TRACE_WARNING, "INTERNAL ERROR: bitmapIsSet out of range (%u > %u)", v,
+        sizeof(bitmap));
+    return (false);
   }
 
-  return(((bitmap >> v) & 1) ? true : false);
+  return (((bitmap >> v) & 1) ? true : false);
 }
 
 u_int64_t Utils::bitmapSet(u_int64_t bitmap, u_int8_t v) {
-  if(v > 64)
-    ntop->getTrace()->traceEvent(TRACE_WARNING, "INTERNAL ERROR: bitmapSet out of range (%u > %u)",
-				 v, sizeof(bitmap));
+  if (v > 64)
+    ntop->getTrace()->traceEvent(
+        TRACE_WARNING, "INTERNAL ERROR: bitmapSet out of range (%u > %u)", v,
+        sizeof(bitmap));
   else
     bitmap |= ((u_int64_t)1) << v;
 
-  return(bitmap);
+  return (bitmap);
 }
 
 u_int64_t Utils::bitmapClear(u_int64_t bitmap, u_int8_t v) {
-  if(v > 64)
-    ntop->getTrace()->traceEvent(TRACE_WARNING, "INTERNAL ERROR: bitmapClear out of range (%u > %u)",
-				 v, sizeof(bitmap));
+  if (v > 64)
+    ntop->getTrace()->traceEvent(
+        TRACE_WARNING, "INTERNAL ERROR: bitmapClear out of range (%u > %u)", v,
+        sizeof(bitmap));
   else
     bitmap &= ~(((u_int64_t)1) << v);
 
-  return(bitmap);
+  return (bitmap);
 }
 
 /* ****************************************************** */
@@ -4582,32 +4798,36 @@ json_object *Utils::cloneJSONSimple(json_object *src) {
   struct json_object_iterator obj_itEnd = json_object_iter_end(src);
   json_object *obj = json_object_new_object();
 
-  if(obj == NULL)
+  if (obj == NULL)
     return NULL;
 
-  while(!json_object_iter_equal(&obj_it, &obj_itEnd)) {
-    const char *key   = json_object_iter_peek_name(&obj_it);
-    json_object *v    = json_object_iter_peek_value(&obj_it);
+  while (!json_object_iter_equal(&obj_it, &obj_itEnd)) {
+    const char *key = json_object_iter_peek_name(&obj_it);
+    json_object *v = json_object_iter_peek_value(&obj_it);
     enum json_type type = json_object_get_type(v);
 
-    if(key != NULL && v != NULL)
-    switch(type) {
-    case json_type_int:
-      json_object_object_add(obj, key, json_object_new_int64(json_object_get_int64(v)));
-      break;
-    case json_type_double:
-      json_object_object_add(obj, key, json_object_new_double(json_object_get_double(v)));
-      break;
-    case json_type_string:
-      json_object_object_add(obj, key, json_object_new_string(json_object_get_string(v)));
-      break;
-    case json_type_boolean:
-      json_object_object_add(obj, key, json_object_new_boolean(json_object_get_boolean(v)));
-      break;
-    case json_type_object: /* not supported */
-    default:
-      break;
-    }
+    if (key != NULL && v != NULL)
+      switch (type) {
+      case json_type_int:
+        json_object_object_add(obj, key,
+                               json_object_new_int64(json_object_get_int64(v)));
+        break;
+      case json_type_double:
+        json_object_object_add(
+            obj, key, json_object_new_double(json_object_get_double(v)));
+        break;
+      case json_type_string:
+        json_object_object_add(
+            obj, key, json_object_new_string(json_object_get_string(v)));
+        break;
+      case json_type_boolean:
+        json_object_object_add(
+            obj, key, json_object_new_boolean(json_object_get_boolean(v)));
+        break;
+      case json_type_object: /* not supported */
+      default:
+        break;
+      }
 
     json_object_iter_next(&obj_it);
   }
@@ -4635,11 +4855,11 @@ u_int32_t Utils::pow2(u_int32_t v) {
 
 /* ****************************************************** */
 
-int Utils::exec(const char * command) {
+int Utils::exec(const char *command) {
   int rc = 0;
 
 #if defined(__linux__) || defined(__FreeBSD__) || defined(__APPLE__)
-  if(!command || command[0] == '\0')
+  if (!command || command[0] == '\0')
     return 0;
 
   fflush(stdout);
@@ -4649,7 +4869,7 @@ int Utils::exec(const char * command) {
   /*
   if (rc == -1)
     ntop->getTrace()->traceEvent(TRACE_WARNING, "Failed command %s: %d/%s",
-				 command_buf, errno, strerror(errno));
+                                 command_buf, errno, strerror(errno));
   */
 #endif
 
@@ -4659,11 +4879,11 @@ int Utils::exec(const char * command) {
 /* ****************************************************** */
 
 #ifdef __linux__
-void Utils::deferredExec(const char * command) {
+void Utils::deferredExec(const char *command) {
   char command_buf[256];
   int res;
 
-  if(!command || command[0] == '\0')
+  if (!command || command[0] == '\0')
     return;
 
   /* Self-restarting service does not restart with systemd:
@@ -4672,18 +4892,17 @@ void Utils::deferredExec(const char * command) {
 
      https://unix.stackexchange.com/questions/202048/self-restarting-service-does-not-restart-with-systemd
    */
-  if((res = snprintf(command_buf, sizeof(command_buf),
-		     "echo \"sleep 1 && %s\" | at now",
-		     command)) < 0
-     || res >= (int)sizeof(command_buf))
+  if ((res = snprintf(command_buf, sizeof(command_buf),
+                      "echo \"sleep 1 && %s\" | at now", command)) < 0 ||
+      res >= (int)sizeof(command_buf))
     return;
 
   printf("%s\n", command_buf);
   fflush(stdout);
 
-  if(system(command_buf) == -1)
+  if (system(command_buf) == -1)
     ntop->getTrace()->traceEvent(TRACE_WARNING, "Failed command %s: %d/%s",
-				 command_buf, errno, strerror(errno));
+                                 command_buf, errno, strerror(errno));
 }
 #endif
 
@@ -4696,10 +4915,11 @@ void Utils::tlv2lua(lua_State *vm, ndpi_serializer *serializer) {
 
   rc = ndpi_init_deserializer(&deserializer, serializer);
 
-  if(rc == -1)
+  if (rc == -1)
     return;
 
-  while((et = ndpi_deserialize_get_item_type(&deserializer, &kt)) != ndpi_serialization_unknown) {
+  while ((et = ndpi_deserialize_get_item_type(&deserializer, &kt)) !=
+         ndpi_serialization_unknown) {
     char key[64];
     u_int32_t k32;
     ndpi_string ks, vs;
@@ -4710,67 +4930,67 @@ void Utils::tlv2lua(lua_State *vm, ndpi_serializer *serializer) {
     int64_t i64;
     u_int8_t bkp;
 
-    if(et == ndpi_serialization_end_of_record) {
+    if (et == ndpi_serialization_end_of_record) {
       ndpi_deserialize_next(&deserializer);
       return;
     }
 
-    switch(kt) {
-      case ndpi_serialization_uint32:
-        ndpi_deserialize_key_uint32(&deserializer, &k32);
-        snprintf(key, sizeof(key), "%u", k32);
+    switch (kt) {
+    case ndpi_serialization_uint32:
+      ndpi_deserialize_key_uint32(&deserializer, &k32);
+      snprintf(key, sizeof(key), "%u", k32);
       break;
 
-      case ndpi_serialization_string:
-        ndpi_deserialize_key_string(&deserializer, &ks);
-        bkp = ks.str[ks.str_len];
-        ks.str[ks.str_len] = '\0';
-        snprintf(key, sizeof(key), "%s", ks.str);
-        ks.str[ks.str_len] = bkp;
+    case ndpi_serialization_string:
+      ndpi_deserialize_key_string(&deserializer, &ks);
+      bkp = ks.str[ks.str_len];
+      ks.str[ks.str_len] = '\0';
+      snprintf(key, sizeof(key), "%s", ks.str);
+      ks.str[ks.str_len] = bkp;
       break;
 
-      default:
-        /* Unexpected type */
-        return;
+    default:
+      /* Unexpected type */
+      return;
     }
 
-    switch(et) {
-      case ndpi_serialization_uint32:
-        ndpi_deserialize_value_uint32(&deserializer, &v32);
-        lua_push_int32_table_entry(vm, key, v32);
-        break;
+    switch (et) {
+    case ndpi_serialization_uint32:
+      ndpi_deserialize_value_uint32(&deserializer, &v32);
+      lua_push_int32_table_entry(vm, key, v32);
+      break;
 
-      case ndpi_serialization_uint64:
-        ndpi_deserialize_value_uint64(&deserializer, &v64);
-        lua_push_uint64_table_entry(vm, key, v64);
-        break;
+    case ndpi_serialization_uint64:
+      ndpi_deserialize_value_uint64(&deserializer, &v64);
+      lua_push_uint64_table_entry(vm, key, v64);
+      break;
 
-      case ndpi_serialization_int32:
-        ndpi_deserialize_value_int32(&deserializer, &i32);
-        lua_push_int32_table_entry(vm, key, i32);
-        break;
+    case ndpi_serialization_int32:
+      ndpi_deserialize_value_int32(&deserializer, &i32);
+      lua_push_int32_table_entry(vm, key, i32);
+      break;
 
-      case ndpi_serialization_int64:
-        ndpi_deserialize_value_int64(&deserializer, &i64);
-        lua_push_uint64_table_entry(vm, key, i64);
-        break;
+    case ndpi_serialization_int64:
+      ndpi_deserialize_value_int64(&deserializer, &i64);
+      lua_push_uint64_table_entry(vm, key, i64);
+      break;
 
-      case ndpi_serialization_float:
-        ndpi_deserialize_value_float(&deserializer, &f);
-        lua_push_float_table_entry(vm, key, f);
-        break;
+    case ndpi_serialization_float:
+      ndpi_deserialize_value_float(&deserializer, &f);
+      lua_push_float_table_entry(vm, key, f);
+      break;
 
-      case ndpi_serialization_string:
-        ndpi_deserialize_value_string(&deserializer, &vs);
-        bkp = vs.str[vs.str_len];
-        vs.str[vs.str_len] = '\0';
-        lua_push_str_table_entry(vm, key, vs.str);
-        vs.str[vs.str_len] = bkp;
-        break;
+    case ndpi_serialization_string:
+      ndpi_deserialize_value_string(&deserializer, &vs);
+      bkp = vs.str[vs.str_len];
+      vs.str[vs.str_len] = '\0';
+      lua_push_str_table_entry(vm, key, vs.str);
+      vs.str[vs.str_len] = bkp;
+      break;
 
-      default:
-        /* Unexpected type */
-        return;
+    default:
+      /* Unexpected type */
+      return;
     }
 
     /* Move to the next element */
@@ -4781,8 +5001,9 @@ void Utils::tlv2lua(lua_State *vm, ndpi_serializer *serializer) {
 /* ****************************************************** */
 
 u_int16_t Utils::country2u16(const char *country_code) {
-  if(country_code == NULL || strlen(country_code) < 2) return 0;
-  return ((((u_int16_t) country_code[0]) << 8) | ((u_int16_t) country_code[1]));
+  if (country_code == NULL || strlen(country_code) < 2)
+    return 0;
+  return ((((u_int16_t)country_code[0]) << 8) | ((u_int16_t)country_code[1]));
 }
 
 /* ****************************************************** */
@@ -4793,9 +5014,13 @@ bool Utils::isNumber(const char *s, unsigned int s_len, bool *is_float) {
 
   *is_float = false;
 
-  for(i = 0; i < s_len; i++) {
-    if(!isdigit(s[i]) && s[i] != '.') { is_num = false; break; }
-    if(s[i] == '.') *is_float = true;
+  for (i = 0; i < s_len; i++) {
+    if (!isdigit(s[i]) && s[i] != '.') {
+      is_num = false;
+      break;
+    }
+    if (s[i] == '.')
+      *is_float = true;
   }
 
   return is_num;
@@ -4805,22 +5030,22 @@ bool Utils::isNumber(const char *s, unsigned int s_len, bool *is_float) {
 
 bool Utils::isPingSupported() {
 #ifndef WIN32
-    int sd;
+  int sd;
 
 #if defined(__APPLE__)
-    sd = socket(AF_INET, SOCK_DGRAM, IPPROTO_ICMP);
+  sd = socket(AF_INET, SOCK_DGRAM, IPPROTO_ICMP);
 #else
-    sd = socket(PF_INET, SOCK_RAW, IPPROTO_ICMP);
+  sd = socket(PF_INET, SOCK_RAW, IPPROTO_ICMP);
 #endif
 
-    if(sd != -1) {
-        close(sd);
+  if (sd != -1) {
+    close(sd);
 
-        return(true);
-    }
+    return (true);
+  }
 #endif
 
-    return(false);
+  return (false);
 }
 
 /* ****************************************************** */
@@ -4830,18 +5055,19 @@ bool Utils::isPingSupported() {
  * to handle PF_RING interfaces like zc:ens2f1@3
  * (it removes '<module>:' prefix or trailing '@<queue>')
  */
-char* Utils::ifname2devname(const char *ifname, char *devname, int devname_size) {
+char *Utils::ifname2devname(const char *ifname, char *devname,
+                            int devname_size) {
   const char *colon;
   char *at;
 
   /* strip prefix ":" */
   colon = strchr(ifname, ':');
-  strncpy(devname, colon != NULL ? colon+1 : ifname, devname_size);
-  devname[devname_size-1] = '\0';
+  strncpy(devname, colon != NULL ? colon + 1 : ifname, devname_size);
+  devname[devname_size - 1] = '\0';
 
   /* strip trailing "@" */
   at = strchr(devname, '@');
-  if(at != NULL)
+  if (at != NULL)
     at[0] = '\0';
 
   return devname;
@@ -4850,10 +5076,10 @@ char* Utils::ifname2devname(const char *ifname, char *devname, int devname_size)
 /* ****************************************************** */
 
 ScoreCategory Utils::mapAlertToScoreCategory(AlertCategory alert_category) {
-  if(alert_category == alert_category_security)
-    return(score_category_security);
+  if (alert_category == alert_category_security)
+    return (score_category_security);
   else
-    return(score_category_network);
+    return (score_category_network);
 }
 
 /* ****************************************************** */
@@ -4861,7 +5087,7 @@ ScoreCategory Utils::mapAlertToScoreCategory(AlertCategory alert_category) {
 AlertLevel Utils::mapScoreToSeverity(u_int32_t score) {
   if (score < SCORE_LEVEL_INFO)
     return alert_level_none;
-  else if(score < SCORE_LEVEL_NOTICE)
+  else if (score < SCORE_LEVEL_NOTICE)
     return alert_level_info;
   else if (score < SCORE_LEVEL_WARNING)
     return alert_level_notice;
@@ -4874,13 +5100,13 @@ AlertLevel Utils::mapScoreToSeverity(u_int32_t score) {
 /* ****************************************************** */
 
 u_int8_t Utils::mapSeverityToScore(AlertLevel alert_level) {
-  if(alert_level <= alert_level_info)
+  if (alert_level <= alert_level_info)
     return SCORE_LEVEL_INFO;
-  else if(alert_level <= alert_level_notice)
+  else if (alert_level <= alert_level_notice)
     return SCORE_LEVEL_NOTICE;
-  else if(alert_level <= alert_level_warning)
+  else if (alert_level <= alert_level_warning)
     return SCORE_LEVEL_WARNING;
-  else if(alert_level <= alert_level_error)
+  else if (alert_level <= alert_level_error)
     return SCORE_LEVEL_ERROR;
   else
     return SCORE_LEVEL_SEVERE;
@@ -4889,7 +5115,7 @@ u_int8_t Utils::mapSeverityToScore(AlertLevel alert_level) {
 /* ****************************************************** */
 
 AlertLevelGroup Utils::mapAlertLevelToGroup(AlertLevel alert_level) {
-  switch(alert_level) {
+  switch (alert_level) {
   case alert_level_debug:
   case alert_level_info:
   case alert_level_notice:
@@ -4918,47 +5144,69 @@ bool Utils::hasExtension(const char *path, const char *ext) {
 
 #ifndef WIN32
 int Utils::mapSyslogFacilityTextToValue(const char *facility_text) {
-       if (strcasecmp(facility_text, "auth") == 0) return LOG_AUTH;
-  else if (strcasecmp(facility_text, "authpriv") == 0) return LOG_AUTHPRIV;
-  else if (strcasecmp(facility_text, "cron") == 0) return LOG_CRON;
-  else if (strcasecmp(facility_text, "daemon") == 0) return LOG_DAEMON;
-  else if (strcasecmp(facility_text, "ftp") == 0) return LOG_FTP;
-  else if (strcasecmp(facility_text, "kern") == 0) return LOG_KERN;
-  else if (strcasecmp(facility_text, "lpr") == 0) return LOG_LPR;
-  else if (strcasecmp(facility_text, "mail") == 0) return LOG_MAIL;
-  else if (strcasecmp(facility_text, "news") == 0) return LOG_NEWS;
-  else if (strcasecmp(facility_text, "security") == 0) return LOG_AUTH;
-  else if (strcasecmp(facility_text, "syslog") == 0) return LOG_SYSLOG;
-  else if (strcasecmp(facility_text, "user") == 0) return LOG_USER;
-  else if (strcasecmp(facility_text, "uucp") == 0) return LOG_UUCP;
-  else if (strcasecmp(facility_text, "local0") == 0) return LOG_LOCAL0;
-  else if (strcasecmp(facility_text, "local1") == 0) return LOG_LOCAL1;
-  else if (strcasecmp(facility_text, "local2") == 0) return LOG_LOCAL2;
-  else if (strcasecmp(facility_text, "local3") == 0) return LOG_LOCAL3;
-  else if (strcasecmp(facility_text, "local4") == 0) return LOG_LOCAL4;
-  else if (strcasecmp(facility_text, "local5") == 0) return LOG_LOCAL5;
-  else if (strcasecmp(facility_text, "local6") == 0) return LOG_LOCAL6;
-  else if (strcasecmp(facility_text, "local7") == 0) return LOG_LOCAL7;
-  else return -1;
+  if (strcasecmp(facility_text, "auth") == 0)
+    return LOG_AUTH;
+  else if (strcasecmp(facility_text, "authpriv") == 0)
+    return LOG_AUTHPRIV;
+  else if (strcasecmp(facility_text, "cron") == 0)
+    return LOG_CRON;
+  else if (strcasecmp(facility_text, "daemon") == 0)
+    return LOG_DAEMON;
+  else if (strcasecmp(facility_text, "ftp") == 0)
+    return LOG_FTP;
+  else if (strcasecmp(facility_text, "kern") == 0)
+    return LOG_KERN;
+  else if (strcasecmp(facility_text, "lpr") == 0)
+    return LOG_LPR;
+  else if (strcasecmp(facility_text, "mail") == 0)
+    return LOG_MAIL;
+  else if (strcasecmp(facility_text, "news") == 0)
+    return LOG_NEWS;
+  else if (strcasecmp(facility_text, "security") == 0)
+    return LOG_AUTH;
+  else if (strcasecmp(facility_text, "syslog") == 0)
+    return LOG_SYSLOG;
+  else if (strcasecmp(facility_text, "user") == 0)
+    return LOG_USER;
+  else if (strcasecmp(facility_text, "uucp") == 0)
+    return LOG_UUCP;
+  else if (strcasecmp(facility_text, "local0") == 0)
+    return LOG_LOCAL0;
+  else if (strcasecmp(facility_text, "local1") == 0)
+    return LOG_LOCAL1;
+  else if (strcasecmp(facility_text, "local2") == 0)
+    return LOG_LOCAL2;
+  else if (strcasecmp(facility_text, "local3") == 0)
+    return LOG_LOCAL3;
+  else if (strcasecmp(facility_text, "local4") == 0)
+    return LOG_LOCAL4;
+  else if (strcasecmp(facility_text, "local5") == 0)
+    return LOG_LOCAL5;
+  else if (strcasecmp(facility_text, "local6") == 0)
+    return LOG_LOCAL6;
+  else if (strcasecmp(facility_text, "local7") == 0)
+    return LOG_LOCAL7;
+  else
+    return -1;
 }
 #endif
 
 /* ****************************************************** */
 
-static char* appendFilterString(char *filters, char *new_filter) {
-  if(!filters)
+static char *appendFilterString(char *filters, char *new_filter) {
+  if (!filters)
     filters = strdup(new_filter);
   else {
-    filters = (char*) realloc(filters, strlen(filters) + strlen(new_filter)
-      + sizeof(" OR "));
+    filters = (char *)realloc(filters, strlen(filters) + strlen(new_filter) +
+                                           sizeof(" OR "));
 
-    if(filters) {
+    if (filters) {
       strcat(filters, " OR ");
       strcat(filters, new_filter);
     }
   }
 
-  return(filters);
+  return (filters);
 }
 
 struct sqlite_filter_data {
@@ -4967,8 +5215,9 @@ struct sqlite_filter_data {
   char *flows_filter;
 };
 
-static void allowed_nets_walker(ndpi_patricia_node_t *node, void *data, void *user_data) {
-  struct sqlite_filter_data *filterdata = (sqlite_filter_data*)user_data;
+static void allowed_nets_walker(ndpi_patricia_node_t *node, void *data,
+                                void *user_data) {
+  struct sqlite_filter_data *filterdata = (sqlite_filter_data *)user_data;
   struct in6_addr lower_addr;
   struct in6_addr upper_addr;
   ndpi_prefix_t *prefix = ndpi_patricia_get_node_prefix(node);
@@ -4976,19 +5225,19 @@ static void allowed_nets_walker(ndpi_patricia_node_t *node, void *data, void *us
   char lower_hex[33], upper_hex[33];
   char hosts_buf[512], flows_buf[512];
 
-  if(filterdata->match_all)
+  if (filterdata->match_all)
     return;
 
-  if(bitlen == 0) {
+  if (bitlen == 0) {
     /* Match all, no filter necessary */
     filterdata->match_all = true;
 
-    if(filterdata->hosts_filter) {
+    if (filterdata->hosts_filter) {
       free(filterdata->hosts_filter);
       filterdata->flows_filter = NULL;
     }
 
-    if(filterdata->flows_filter) {
+    if (filterdata->flows_filter) {
       free(filterdata->flows_filter);
       filterdata->flows_filter = NULL;
     }
@@ -4996,9 +5245,9 @@ static void allowed_nets_walker(ndpi_patricia_node_t *node, void *data, void *us
     return;
   }
 
-  if(prefix->family == AF_INET) {
-    memset(&lower_addr, 0, sizeof(lower_addr)-4);
-    memcpy(((char*)&lower_addr) + 12, &prefix->add.sin.s_addr, 4);
+  if (prefix->family == AF_INET) {
+    memset(&lower_addr, 0, sizeof(lower_addr) - 4);
+    memcpy(((char *)&lower_addr) + 12, &prefix->add.sin.s_addr, 4);
 
     bitlen += 96;
   } else
@@ -5007,8 +5256,8 @@ static void allowed_nets_walker(ndpi_patricia_node_t *node, void *data, void *us
   /* Calculate upper address */
   memcpy(&upper_addr, &lower_addr, sizeof(upper_addr));
 
-  for(int i=0; i<(128 - bitlen); i++) {
-    u_char bit = 127-i;
+  for (int i = 0; i < (128 - bitlen); i++) {
+    u_char bit = 127 - i;
 
     upper_addr.s6_addr[bit / 8] |= (1 << (bit % 8));
 
@@ -5017,32 +5266,34 @@ static void allowed_nets_walker(ndpi_patricia_node_t *node, void *data, void *us
   }
 
   /* Convert to hex */
-  for(int i=0; i<16; i++) {
+  for (int i = 0; i < 16; i++) {
     u_char lval = lower_addr.s6_addr[i];
     u_char uval = upper_addr.s6_addr[i];
 
-    lower_hex[i*2]   = hex_chars[(lval >> 4) & 0xF];
-    lower_hex[i*2+1] = hex_chars[lval & 0xF];
+    lower_hex[i * 2] = hex_chars[(lval >> 4) & 0xF];
+    lower_hex[i * 2 + 1] = hex_chars[lval & 0xF];
 
-    upper_hex[i*2]   = hex_chars[(uval >> 4) & 0xF];
-    upper_hex[i*2+1] = hex_chars[uval & 0xF];
+    upper_hex[i * 2] = hex_chars[(uval >> 4) & 0xF];
+    upper_hex[i * 2 + 1] = hex_chars[uval & 0xF];
   }
 
   lower_hex[32] = '\0';
   upper_hex[32] = '\0';
 
   /* Build filter strings */
-  snprintf(hosts_buf, sizeof(hosts_buf),
-	    "((ip >= x'%s') AND (ip <= x'%s'))",
-	    lower_hex, upper_hex);
+  snprintf(hosts_buf, sizeof(hosts_buf), "((ip >= x'%s') AND (ip <= x'%s'))",
+           lower_hex, upper_hex);
 
   snprintf(flows_buf, sizeof(flows_buf),
-	    "(((cli_ip >= x'%s') AND (cli_ip <= x'%s')) OR ((srv_ip >= x'%s') AND (srv_ip <= x'%s')))",
-	    lower_hex, upper_hex, lower_hex, upper_hex);
+           "(((cli_ip >= x'%s') AND (cli_ip <= x'%s')) OR ((srv_ip >= x'%s') "
+           "AND (srv_ip <= x'%s')))",
+           lower_hex, upper_hex, lower_hex, upper_hex);
 
-  filterdata->hosts_filter = appendFilterString(filterdata->hosts_filter, hosts_buf);
+  filterdata->hosts_filter =
+      appendFilterString(filterdata->hosts_filter, hosts_buf);
 
-  filterdata->flows_filter = appendFilterString(filterdata->flows_filter, flows_buf);
+  filterdata->flows_filter =
+      appendFilterString(filterdata->flows_filter, flows_buf);
 }
 
 /* ******************************************* */
@@ -5050,7 +5301,7 @@ static void allowed_nets_walker(ndpi_patricia_node_t *node, void *data, void *us
 void Utils::buildSqliteAllowedNetworksFilters(lua_State *vm) {
   AddressTree *allowed_nets = getLuaVMUserdata(vm, allowedNets);
 
-  if(allowed_nets) {
+  if (allowed_nets) {
     struct sqlite_filter_data data;
     memset(&data, 0, sizeof(data));
 
@@ -5066,7 +5317,8 @@ void Utils::buildSqliteAllowedNetworksFilters(lua_State *vm) {
 /* ****************************************************** */
 
 void Utils::make_session_key(char *buf, u_int buf_len) {
-  snprintf(buf, buf_len, "session_%u_%u", ntop->getPrefs()->get_http_port(), ntop->getPrefs()->get_https_port());
+  snprintf(buf, buf_len, "session_%u_%u", ntop->getPrefs()->get_http_port(),
+           ntop->getPrefs()->get_https_port());
 }
 
 /* ****************************************************** */
@@ -5075,9 +5327,9 @@ void Utils::make_session_key(char *buf, u_int buf_len) {
  * Use this function only if you need to duplicate the string to be lowered
  * otherwise use Utils::stringtolower(name)
  */
-char* Utils::toLowerResolvedNames(const char *const resolvedName) {
+char *Utils::toLowerResolvedNames(const char *const resolvedName) {
   char *name = strdup(resolvedName);
-  if(name) {
+  if (name) {
     name = Utils::stringtolower(name);
   }
 
@@ -5087,13 +5339,16 @@ char* Utils::toLowerResolvedNames(const char *const resolvedName) {
 /* ************************************************ */
 
 bool const Utils::isIpEmpty(ipAddress addr) {
-  if((addr.ipVersion == 0)
-     || ((addr.ipVersion == 4) && (addr.ipType.ipv4 == 0))) {
+  if ((addr.ipVersion == 0) ||
+      ((addr.ipVersion == 4) && (addr.ipType.ipv4 == 0))) {
     return true;
-  } else if(addr.ipVersion == 6) {
+  } else if (addr.ipVersion == 6) {
     struct ndpi_in6_addr empty_ipv6;
     memset(&empty_ipv6, 0, sizeof(empty_ipv6));
-    return memcmp((void*)&empty_ipv6, (void*)&addr.ipType.ipv6, sizeof(empty_ipv6)) == 0 ? true : false;
+    return memcmp((void *)&empty_ipv6, (void *)&addr.ipType.ipv6,
+                  sizeof(empty_ipv6)) == 0
+               ? true
+               : false;
   }
 
   return false;
@@ -5101,18 +5356,18 @@ bool const Utils::isIpEmpty(ipAddress addr) {
 
 /* ************************************************ */
 
-int8_t Utils::num_files_in_dir(const char * dir) {
+int8_t Utils::num_files_in_dir(const char *dir) {
   DIR *dir_struct;
   struct dirent *ent;
   u_int8_t num_files = 0;
 
-  if ((dir_struct = opendir (dir)) != NULL) {
-    while ((ent = readdir (dir_struct)) != NULL) {
+  if ((dir_struct = opendir(dir)) != NULL) {
+    while ((ent = readdir(dir_struct)) != NULL) {
       if (ent->d_name[0] != '.')
         num_files++;
     }
 
-    closedir (dir_struct);
+    closedir(dir_struct);
   }
 
   return (num_files);
@@ -5120,20 +5375,20 @@ int8_t Utils::num_files_in_dir(const char * dir) {
 
 /* ******************************************* */
 
-const char* Utils::get_state_label(ThreadedActivityState ta_state) {
-  switch(ta_state) {
+const char *Utils::get_state_label(ThreadedActivityState ta_state) {
+  switch (ta_state) {
   case threaded_activity_state_sleeping:
-    return("sleeping");
+    return ("sleeping");
     break;
   case threaded_activity_state_queued:
-    return("queued");
+    return ("queued");
     break;
   case threaded_activity_state_running:
-    return("running");
+    return ("running");
     break;
   case threaded_activity_state_unknown:
   default:
-    return("unknown");
+    return ("unknown");
     break;
   }
 }

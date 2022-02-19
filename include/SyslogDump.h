@@ -25,13 +25,12 @@
 #include "ntop_includes.h"
 
 class SyslogDump : public DB {
- public:
+public:
   SyslogDump(NetworkInterface *_iface);
   virtual ~SyslogDump();
 
   virtual bool dumpFlow(time_t when, Flow *f, char *json);
   virtual void startLoop() { ; }
 };
-
 
 #endif /* _LOGSTASH_H_ */

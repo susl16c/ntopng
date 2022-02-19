@@ -25,7 +25,7 @@
 #include "ntop_includes.h"
 
 class ParsedFlowCore {
- public:
+public:
   u_int8_t src_mac[6], dst_mac[6], direction, source_id;
   u_int8_t src_tos, dst_tos;
   IpAddress src_ip, dst_ip;
@@ -58,7 +58,6 @@ class ParsedFlowCore {
   ParsedFlowCore(const ParsedFlowCore &pfc);
   virtual ~ParsedFlowCore();
   void swap();
-
 
   void print();
 };

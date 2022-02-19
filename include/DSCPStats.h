@@ -25,10 +25,10 @@
 #include "ntop_includes.h"
 
 #define DS_PRECEDENCE_GROUPS 10 /* CS 0..7, LE, Unknown */
-#define DS_PR_LE              8
-#define DS_PR_UNKN            9
+#define DS_PR_LE 8
+#define DS_PR_UNKN 9
 
-#define NUM_DS_VALUES        64
+#define NUM_DS_VALUES 64
 
 /* *************************************** */
 
@@ -45,25 +45,24 @@ class NetworkInterface;
 /* *************************************** */
 
 class DSCPStats {
- private:
+private:
   DSCPCounter counters[DS_PRECEDENCE_GROUPS];
 
   u_int8_t ds2Precedence(u_int8_t ds_id);
   char *precedence2Name(u_int8_t p, char *buf, size_t buf_size);
 
- public:
+public:
   DSCPStats();
   DSCPStats(const DSCPStats &stats);
   ~DSCPStats();
 
   void updateStats(const struct timeval *tv);
 
-  void incStats(u_int16_t ds_id,
-		u_int64_t sent_packets, u_int64_t sent_bytes,
-		u_int64_t rcvd_packets, u_int64_t rcvd_bytes);
+  void incStats(u_int16_t ds_id, u_int64_t sent_packets, u_int64_t sent_bytes,
+                u_int64_t rcvd_packets, u_int64_t rcvd_bytes);
 
   void print(NetworkInterface *iface);
-  void lua(NetworkInterface *iface, lua_State* vm, bool tsLua = false);
+  void lua(NetworkInterface *iface, lua_State *vm, bool tsLua = false);
   void sum(DSCPStats *s) const;
   void resetStats();
 };

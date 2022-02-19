@@ -23,15 +23,16 @@
 #define _OPERATING_SYSTEM_HASH_H_
 
 #include "ntop_includes.h"
- 
+
 class OperatingSystemHash : public GenericHash {
- private:
+private:
   Mutex m;
 
- public:
-  OperatingSystemHash(NetworkInterface *iface, u_int _num_hashes, u_int _max_hash_size);
+public:
+  OperatingSystemHash(NetworkInterface *iface, u_int _num_hashes,
+                      u_int _max_hash_size);
 
-  OperatingSystem* get(OSType os, bool is_inline_call);
+  OperatingSystem *get(OSType os, bool is_inline_call);
 };
 
 #endif /* _AUTONOMOUS_SYSTEM_HASH_H_ */

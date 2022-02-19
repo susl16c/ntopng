@@ -23,7 +23,8 @@
 
 /* **************************************************** */
 
-FlowChecksExecutor::FlowChecksExecutor(FlowChecksLoader *fcl, NetworkInterface *_iface) {
+FlowChecksExecutor::FlowChecksExecutor(FlowChecksLoader *fcl,
+                                       NetworkInterface *_iface) {
   iface = _iface;
   loadFlowChecks(fcl);
 };
@@ -31,19 +32,23 @@ FlowChecksExecutor::FlowChecksExecutor(FlowChecksLoader *fcl, NetworkInterface *
 /* **************************************************** */
 
 FlowChecksExecutor::~FlowChecksExecutor() {
-  if(protocol_detected) delete protocol_detected;
-  if(periodic_update)   delete periodic_update;
-  if(flow_end)          delete flow_end;
-  if(flow_begin)        delete flow_begin;
+  if (protocol_detected)
+    delete protocol_detected;
+  if (periodic_update)
+    delete periodic_update;
+  if (flow_end)
+    delete flow_end;
+  if (flow_begin)
+    delete flow_begin;
 };
 
 /* **************************************************** */
 
 void FlowChecksExecutor::loadFlowChecks(FlowChecksLoader *fcl) {
   protocol_detected = fcl->getProtocolDetectedChecks(iface);
-  periodic_update   = fcl->getPeriodicUpdateChecks(iface);
-  flow_end          = fcl->getFlowEndChecks(iface);
-  flow_begin        = fcl->getFlowBeginChecks(iface);
+  periodic_update = fcl->getPeriodicUpdateChecks(iface);
+  flow_end = fcl->getFlowEndChecks(iface);
+  flow_begin = fcl->getFlowBeginChecks(iface);
 }
 
 /* **************************************************** */
@@ -51,44 +56,45 @@ void FlowChecksExecutor::loadFlowChecks(FlowChecksLoader *fcl) {
 FlowAlert *FlowChecksExecutor::execChecks(Flow *f, FlowChecks c) {
   FlowAlertType predominant_alert = f->getPredominantAlert();
   FlowCheck *predominant_check = NULL;
-  std::list<FlowCheck*> *checks = NULL;
+  std::list<FlowCheck *> *checks = NULL;
   FlowAlert *alert;
 
   switch (c) {
-    case flow_check_protocol_detected:
-      checks = protocol_detected;
-      break;
-    case flow_check_periodic_update:
-      checks = periodic_update;
-      break;
-    case flow_check_flow_end:
-      checks = flow_end;
-      break;
-    case flow_check_flow_begin:
-      checks = flow_begin;
-      break;
-    default:
-      return NULL;
+  case flow_check_protocol_detected:
+    checks = protocol_detected;
+    break;
+  case flow_check_periodic_update:
+    checks = periodic_update;
+    break;
+  case flow_check_flow_end:
+    checks = flow_end;
+    break;
+  case flow_check_flow_begin:
+    checks = flow_begin;
+    break;
+  default:
+    return NULL;
   }
 
-  for(list<FlowCheck*>::iterator it = checks->begin(); it != checks->end(); ++it) {
+  for (list<FlowCheck *>::iterator it = checks->begin(); it != checks->end();
+       ++it) {
     switch (c) {
-      case flow_check_protocol_detected:
-        (*it)->protocolDetected(f);
-        break;
-      case flow_check_periodic_update:
-        (*it)->periodicUpdate(f);
-        break;
-      case flow_check_flow_end:
-        (*it)->flowEnd(f);
-        break;
-      case flow_check_flow_begin:
-        (*it)->flowBegin(f);
-        break;
-      default:
-	break;
+    case flow_check_protocol_detected:
+      (*it)->protocolDetected(f);
+      break;
+    case flow_check_periodic_update:
+      (*it)->periodicUpdate(f);
+      break;
+    case flow_check_flow_end:
+      (*it)->flowEnd(f);
+      break;
+    case flow_check_flow_begin:
+      (*it)->flowBegin(f);
+      break;
+    default:
+      break;
     }
-    
+
     /* Check if the check triggered a predominant alert */
     if (f->getPredominantAlert().id != predominant_alert.id) {
       predominant_alert = f->getPredominantAlert();
@@ -96,8 +102,10 @@ FlowAlert *FlowChecksExecutor::execChecks(Flow *f, FlowChecks c) {
     }
   }
 
-  /* Do NOT allocate any alert, there is nothing left to do as flow alerts don't have to be emitted */
-  if(ntop->getPrefs()->dontEmitFlowAlerts()) return(NULL);
+  /* Do NOT allocate any alert, there is nothing left to do as flow alerts don't
+   * have to be emitted */
+  if (ntop->getPrefs()->dontEmitFlowAlerts())
+    return (NULL);
 
   /* Allocate the alert */
   alert = predominant_check ? predominant_check->buildAlert(f) : NULL;

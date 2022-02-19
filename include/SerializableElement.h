@@ -22,15 +22,15 @@
 #ifndef _SERIALIZABLE_ELEMENT_H_
 
 class SerializableElement {
- protected:
-  static json_object* deserializeJson(const char *key);
+protected:
+  static json_object *deserializeJson(const char *key);
 
   /* Virtual */
-  virtual char* getSerializationKey(char *buf, uint bufsize) = 0;
+  virtual char *getSerializationKey(char *buf, uint bufsize) = 0;
   virtual void deserialize(json_object *obj) = 0;
   virtual void serialize(json_object *obj, DetailsLevel details_level) = 0;
 
- public:
+public:
   bool serializeToRedis();
   bool deserializeFromRedis();
   bool deleteRedisSerialization();

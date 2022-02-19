@@ -19,7 +19,6 @@
  *
  */
 
-
 #ifndef _CONDVAR_H_
 #define _CONDVAR_H_
 
@@ -28,14 +27,14 @@
 /* ******************************* */
 
 class Condvar {
- private:
+private:
   pthread_mutex_t mutex;
-  pthread_cond_t  condvar;
+  pthread_cond_t condvar;
   bool predicate;
 
   int signal_waiters(bool signal_all);
-  
- public:
+
+public:
   Condvar();
   ~Condvar();
 
@@ -43,9 +42,8 @@ class Condvar {
   int wait();
   int timedWait(struct timespec *expiration);
 
-  inline int signal()    { return(signal_waiters(false)); };
-  inline int signalAll() { return(signal_waiters(true));  };
+  inline int signal() { return (signal_waiters(false)); };
+  inline int signalAll() { return (signal_waiters(true)); };
 };
-
 
 #endif /* _CONDVAR_H_ */

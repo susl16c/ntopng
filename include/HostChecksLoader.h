@@ -25,22 +25,23 @@
 #include "ntop_includes.h"
 
 class HostChecksLoader : public ChecksLoader {
- private:
-  /* These are check instances, that is classes instantiated at runtime each one with a given configuration */
-  std::map<std::string, HostCheck*> cb_all; /* All the checks instantiated */
+private:
+  /* These are check instances, that is classes instantiated at runtime each one
+   * with a given configuration */
+  std::map<std::string, HostCheck *> cb_all; /* All the checks instantiated */
 
   void registerChecks();
   void loadConfiguration();
   void registerCheck(HostCheck *cb);
-  
- public:
+
+public:
   HostChecksLoader();
   virtual ~HostChecksLoader();
 
   void printChecks();
 
-  std::list<HostCheck*>* getChecks(NetworkInterface *iface);
-  bool luaCheckInfo(lua_State* vm, std::string check_name) const;
+  std::list<HostCheck *> *getChecks(NetworkInterface *iface);
+  bool luaCheckInfo(lua_State *vm, std::string check_name) const;
 };
 
 #endif /* _HOST_CHECKS_LOADER_H_ */

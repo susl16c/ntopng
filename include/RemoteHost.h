@@ -25,18 +25,20 @@
 #include "ntop_includes.h"
 
 class RemoteHost : public Host {
- private:
+private:
   void initialize();
 
- public:
-  RemoteHost(NetworkInterface *_iface, Mac *_mac, VLANid _vlanId, u_int16_t _observation_point_id, IpAddress *_ip);
-  RemoteHost(NetworkInterface *_iface, char *ipAddress, VLANid _vlanId, u_int16_t _observation_point_id);
+public:
+  RemoteHost(NetworkInterface *_iface, Mac *_mac, VLANid _vlanId,
+             u_int16_t _observation_point_id, IpAddress *_ip);
+  RemoteHost(NetworkInterface *_iface, char *ipAddress, VLANid _vlanId,
+             u_int16_t _observation_point_id);
   virtual ~RemoteHost();
 
   void set_hash_entry_state_idle();
-  virtual int16_t get_local_network_id() const { return(-1);                };
-  virtual bool isLocalHost()  const            { return(false);             };
-  virtual bool isSystemHost() const            { return(false);             };
+  virtual int16_t get_local_network_id() const { return (-1); };
+  virtual bool isLocalHost() const { return (false); };
+  virtual bool isSystemHost() const { return (false); };
 };
 
 #endif /* _REMOTE_HOST_H_ */

@@ -25,11 +25,11 @@
 #include "ntop_includes.h"
 
 class ParsedeBPF {
- private:
+private:
   bool server_info;
   bool free_memory;
 
- public:
+public:
   ProcessInfo process_info;
   ContainerInfo container_info;
   TcpInfo tcp_info;
@@ -41,9 +41,9 @@ class ParsedeBPF {
   ParsedeBPF(const ParsedeBPF &pe);
   virtual ~ParsedeBPF();
 
-  inline void swap() { server_info = !server_info; };	
+  inline void swap() { server_info = !server_info; };
 
-  bool update(const ParsedeBPF * const pe);
+  bool update(const ParsedeBPF *const pe);
   bool isServerInfo() const;
   void print();
   void getJSONObject(json_object *my_object, bool client) const;

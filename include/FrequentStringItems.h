@@ -23,25 +23,29 @@
 
 #include "ntop_includes.h"
 
-/* https://resources.sei.cmu.edu/asset_files/Presentation/2010_017_001_49763.pdf */
+/* https://resources.sei.cmu.edu/asset_files/Presentation/2010_017_001_49763.pdf
+ */
 
 /* *************************************** */
 
 class FrequentStringItems {
- private:
+private:
   u_int32_t max_items, max_items_threshold;
   std::map<std::string, u_int32_t> q;
   Mutex m;
   bool thread_safe;
-  
+
   void prune();
-  
- public:
-  FrequentStringItems(u_int32_t _max_items, bool _thread_safe = true) { max_items =_max_items, max_items_threshold = 2*_max_items, thread_safe = _thread_safe; }
-  
+
+public:
+  FrequentStringItems(u_int32_t _max_items, bool _thread_safe = true) {
+    max_items = _max_items, max_items_threshold = 2 * _max_items,
+    thread_safe = _thread_safe;
+  }
+
   inline u_int32_t getSize() { return q.size(); };
   void add(char *key, u_int32_t value);
-  char* json(u_int32_t max_num_items = (u_int32_t)-1);
+  char *json(u_int32_t max_num_items = (u_int32_t)-1);
 };
 
 #endif /* _FREQUENT_STRING_ITEMS_H_ */

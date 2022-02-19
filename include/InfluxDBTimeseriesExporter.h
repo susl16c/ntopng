@@ -25,22 +25,22 @@
 #include "ntop_includes.h"
 
 class InfluxDBTimeseriesExporter : public TimeseriesExporter {
- private:
+private:
   time_t flushTime;
   u_int32_t cursize;
   u_int32_t num_exports;
   FILE *fp;
-  char fbase[PATH_MAX], fname[PATH_MAX+32];
-  u_int num_cached_entries; 
+  char fbase[PATH_MAX], fname[PATH_MAX + 32];
+  u_int num_cached_entries;
   Mutex m;
-  
+
   void createDump();
-  
- public:
+
+public:
   InfluxDBTimeseriesExporter(NetworkInterface *_if);
   ~InfluxDBTimeseriesExporter();
 
-  bool enqueueData(lua_State* vm, bool do_lock = true);
+  bool enqueueData(lua_State *vm, bool do_lock = true);
   char *dequeueData();
   void flush();
 };

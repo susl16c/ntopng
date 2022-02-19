@@ -26,20 +26,21 @@
  * @file Bloom.h
  *
  * @brief      Bloom class implementation.
- * @details    A Bloom instance represents a bitmask that can be used as bloom filter for strings.
+ * @details    A Bloom instance represents a bitmask that can be used as bloom
+ * filter for strings.
  */
 
 #include "ntop_includes.h"
 
 class Bloom {
- private:
-  Bitmask *bitmask; /**< The bitmask */
+private:
+  Bitmask *bitmask;         /**< The bitmask */
   u_int32_t num_bloom_bits; /**< The bitmask size */
-  u_int32_t mask; /**< The mask to be used for the hash */
+  u_int32_t mask;           /**< The mask to be used for the hash */
 
   u_int32_t ntophash(char *str);
 
- public:
+public:
   Bloom(u_int32_t _num_bloom_bits);
   ~Bloom();
 
@@ -62,7 +63,9 @@ class Bloom {
    * @param str The value to check.
    * @return True is the hash for the provided value is set, false otherwise.
    */
-  inline bool isSetBit(char *str) { return(bitmask->is_set_bit(ntophash(str))); }
+  inline bool isSetBit(char *str) {
+    return (bitmask->is_set_bit(ntophash(str)));
+  }
 };
 
 #endif /* _BLOOM_H_ */

@@ -25,26 +25,28 @@
 #include "ntop_includes.h"
 
 class TcpPacketStats {
- private:
+private:
   u_int64_t pktRetr, pktOOO, pktLost, pktKeepAlive;
 
- public:
+public:
   TcpPacketStats();
-  
-  inline void incRetr(u_int32_t num)      { pktRetr += num;      }
-  inline void incOOO(u_int32_t num)       { pktOOO += num;       }
-  inline void incLost(u_int32_t num)      { pktLost += num;      }
+
+  inline void incRetr(u_int32_t num) { pktRetr += num; }
+  inline void incOOO(u_int32_t num) { pktOOO += num; }
+  inline void incLost(u_int32_t num) { pktLost += num; }
   inline void incKeepAlive(u_int32_t num) { pktKeepAlive += num; }
 
-  char* serialize();
+  char *serialize();
   void deserialize(json_object *o);
-  json_object* getJSONObject();
-  inline bool seqIssues() const { return(pktRetr || pktOOO || pktLost || pktKeepAlive); }
-  void lua(lua_State* vm, const char *label);
+  json_object *getJSONObject();
+  inline bool seqIssues() const {
+    return (pktRetr || pktOOO || pktLost || pktKeepAlive);
+  }
+  void lua(lua_State *vm, const char *label);
 
   inline void sum(TcpPacketStats *s) const {
-    s->pktRetr += pktRetr, s->pktOOO += pktOOO,
-      s->pktLost += pktLost, s->pktKeepAlive += pktKeepAlive;
+    s->pktRetr += pktRetr, s->pktOOO += pktOOO, s->pktLost += pktLost,
+        s->pktKeepAlive += pktKeepAlive;
   }
 
   inline u_int64_t get_retr() const { return pktRetr; };

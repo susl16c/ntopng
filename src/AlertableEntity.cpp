@@ -35,8 +35,10 @@ AlertableEntity::~AlertableEntity() {
   /*
     Cannot destroy an alertable entity with currently engaged alerts
   */
-  if(getNumEngagedAlerts() > 0)
-    ntop->getTrace()->traceEvent(TRACE_ERROR, "Internal error. Destroying an alertable with engaged alerts.");
+  if (getNumEngagedAlerts() > 0)
+    ntop->getTrace()->traceEvent(
+        TRACE_ERROR,
+        "Internal error. Destroying an alertable with engaged alerts.");
 }
 
 /* ****************************************** */
@@ -57,33 +59,34 @@ void AlertableEntity::decNumAlertsEngaged(AlertLevel alert_severity) {
 
 /* ****************************************** */
 
-int AlertableEntity::parseEntityValueIp(const char *alert_entity_value, struct in6_addr *ip_raw) {
+int AlertableEntity::parseEntityValueIp(const char *alert_entity_value,
+                                        struct in6_addr *ip_raw) {
   char tmp_entity[128];
   char *sep;
   int rv;
 
   memset(ip_raw, 0, sizeof(*ip_raw));
 
-  if(!alert_entity_value)
-    return(-1);
+  if (!alert_entity_value)
+    return (-1);
 
-  snprintf(tmp_entity, sizeof(tmp_entity)-1, "%s", alert_entity_value);
+  snprintf(tmp_entity, sizeof(tmp_entity) - 1, "%s", alert_entity_value);
 
   /* Ignore VLAN */
-  if((sep = strchr(tmp_entity, '@')))
+  if ((sep = strchr(tmp_entity, '@')))
     *sep = '\0';
 
   /* Ignore subnet. Save the networks as a single IP. */
-  if((sep = strchr(tmp_entity, '/')))
+  if ((sep = strchr(tmp_entity, '/')))
     *sep = '\0';
 
   /* Try to parse as IP address */
-  if(strchr(tmp_entity, ':'))
+  if (strchr(tmp_entity, ':'))
     rv = inet_pton(AF_INET6, tmp_entity, ip_raw);
   else
-    rv = inet_pton(AF_INET, tmp_entity, ((char*)ip_raw)+12);
+    rv = inet_pton(AF_INET, tmp_entity, ((char *)ip_raw) + 12);
 
-  return(rv);
+  return (rv);
 }
 
 /* ****************************************** */
@@ -95,22 +98,22 @@ bool AlertableEntity::matchesAllowedNetworks(AddressTree *allowed_nets) {
   std::string entity_value = getEntityValue();
   const char *alert_entity_value = entity_value.c_str();
 
-  if(!allowed_nets)
-    return(true);
+  if (!allowed_nets)
+    return (true);
 
   parseEntityValueIp(alert_entity_value, &ip_raw);
 
-  if(strchr(alert_entity_value, ':')) {
+  if (strchr(alert_entity_value, ':')) {
     // IPv6
     addr.set(&ip_raw);
     netbits = 128;
   } else {
     // IPv4
-    addr.set(*((u_int32_t*)&ip_raw.s6_addr[12]));
+    addr.set(*((u_int32_t *)&ip_raw.s6_addr[12]));
     netbits = 32;
   }
 
-  return(allowed_nets->match(&addr, netbits));
+  return (allowed_nets->match(&addr, netbits));
 }
 
 /* ****************************************** */

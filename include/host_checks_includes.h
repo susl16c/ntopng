@@ -27,30 +27,30 @@
 
 #include "host_checks/CountriesContacts.h"
 
-#include "host_checks/FlowHits.h"
 #include "host_checks/FlowFlood.h"
-#include "host_checks/SYNScan.h"
-#include "host_checks/SYNFlood.h"
+#include "host_checks/FlowHits.h"
 #include "host_checks/ICMPFlood.h"
+#include "host_checks/SYNFlood.h"
+#include "host_checks/SYNScan.h"
 
-#include "host_checks/ServerContacts.h"
 #include "host_checks/DNSServerContacts.h"
-#include "host_checks/SMTPServerContacts.h"
 #include "host_checks/NTPServerContacts.h"
+#include "host_checks/SMTPServerContacts.h"
+#include "host_checks/ServerContacts.h"
 
-#include "host_checks/P2PTraffic.h"
-#include "host_checks/NTPTraffic.h"
 #include "host_checks/DNSTraffic.h"
+#include "host_checks/NTPTraffic.h"
+#include "host_checks/P2PTraffic.h"
 
 #include "host_checks/DangerousHost.h"
-#include "host_checks/RemoteConnection.h"
 #include "host_checks/DomainNamesContacts.h"
+#include "host_checks/RemoteConnection.h"
 #include "host_checks/ScoreThreshold.h"
 
 #include "host_checks/PktThreshold.h"
 
 #ifdef NTOPNG_PRO
-#include "host_checks/ScoreAnomaly.h"
 #include "host_checks/FlowAnomaly.h"
+#include "host_checks/ScoreAnomaly.h"
 #endif
 #endif /* _HOST_CHECKS_INCLUDES_H_ */

@@ -37,19 +37,19 @@ RecipientQueues::RecipientQueues() {
 /* *************************************** */
 
 RecipientQueues::~RecipientQueues() {
-  if(queue)
+  if (queue)
     delete queue;
 }
 
 /* *************************************** */
 
 bool RecipientQueues::dequeue(AlertFifoItem *notification) {
-  if(!queue || !notification)
+  if (!queue || !notification)
     return false;
 
   *notification = queue->dequeue();
 
-  if(notification->alert) {
+  if (notification->alert) {
     last_use = time(NULL);
     return true;
   }
@@ -59,18 +59,20 @@ bool RecipientQueues::dequeue(AlertFifoItem *notification) {
 
 /* *************************************** */
 
-bool RecipientQueues::enqueue(const AlertFifoItem* const notification) {
+bool RecipientQueues::enqueue(const AlertFifoItem *const notification) {
   bool res = false;
 
-  if(!notification
-     || !notification->alert
-     || notification->alert_severity < minimum_severity              /* Severity too low for this recipient     */
-     || !(enabled_categories & (1 << notification->alert_category))  /* Category not enabled for this recipient */
-     )
+  if (!notification || !notification->alert ||
+      notification->alert_severity <
+          minimum_severity /* Severity too low for this recipient     */
+      || !(enabled_categories &
+           (1 << notification->alert_category)) /* Category not enabled for this
+                                                   recipient */
+  )
     return true; /* Nothing to enqueue */
 
-  if ((!queue &&
-       !(queue = new (nothrow) AlertFifoQueue(ALERTS_NOTIFICATIONS_QUEUE_SIZE)))) {
+  if ((!queue && !(queue = new (nothrow)
+                       AlertFifoQueue(ALERTS_NOTIFICATIONS_QUEUE_SIZE)))) {
     /* Queue not available */
     drops++;
     return false; /* Enqueue failed */
@@ -78,12 +80,13 @@ bool RecipientQueues::enqueue(const AlertFifoItem* const notification) {
 
   /* Enqueue the notification (allocate memory for the alert string) */
   AlertFifoItem q = *notification;
-  if((q.alert = strdup(notification->alert)))
+  if ((q.alert = strdup(notification->alert)))
     res = queue->enqueue(q);
 
-  if(!res) {
+  if (!res) {
     drops++;
-    if(q.alert) free(q.alert);
+    if (q.alert)
+      free(q.alert);
   } else
     uses++;
 
@@ -92,7 +95,7 @@ bool RecipientQueues::enqueue(const AlertFifoItem* const notification) {
 
 /* *************************************** */
 
-void RecipientQueues::lua(lua_State* vm) {
+void RecipientQueues::lua(lua_State *vm) {
   lua_newtable(vm);
   lua_push_uint64_table_entry(vm, "last_use", last_use);
   lua_push_uint64_table_entry(vm, "num_drops", drops);
@@ -105,10 +108,10 @@ void RecipientQueues::lua(lua_State* vm) {
 bool RecipientQueues::empty() {
   bool res = true;
 
-  if(queue) {
-    if(!queue->empty()) {
+  if (queue) {
+    if (!queue->empty()) {
       res = false;
-    }  
+    }
   }
 
   return res;

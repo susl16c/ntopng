@@ -23,7 +23,8 @@
  * @file Bitmask.h
  *
  * @brief      Bitmask class implementation.
- * @details    A Bitmask instance represents a simple bitmask, where bits can be set, cleared and read.
+ * @details    A Bitmask instance represents a simple bitmask, where bits can be
+ * set, cleared and read.
  */
 
 #ifndef _BITMASK_H_
@@ -40,16 +41,16 @@
  */
 
 class Bitmask {
- private:
+private:
   u_int32_t tot_elems; /**< The bitmask size in bits */
   u_int32_t num_elems; /**< The bitmask size in bytes */
-  u_int32_t *bits; /**< The bitmask */
+  u_int32_t *bits;     /**< The bitmask */
 
   void bitmask_set(u_int32_t n);
   void bitmask_clr(u_int32_t n);
   bool bitmask_isset(u_int32_t n);
 
- public:
+public:
   Bitmask(u_int32_t num_tot_elems);
   ~Bitmask();
 
@@ -70,7 +71,9 @@ class Bitmask {
    * @param bit The bit position.
    * @return True if the bit is set, false otherwise.
    */
-  inline bool is_set_bit(u_int32_t bit) { return(bitmask_isset(bit) ? true : false); }
+  inline bool is_set_bit(u_int32_t bit) {
+    return (bitmask_isset(bit) ? true : false);
+  }
 
   void print();
 };

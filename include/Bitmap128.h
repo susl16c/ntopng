@@ -39,9 +39,9 @@ public:
   void bitmapOr(const Bitmap128 b);
   void set(const Bitmap128 *b);
   bool equal(const Bitmap128 *b) const;
-  
-  void lua(lua_State* vm, const char *label) const;
-  const char * toHexString(char *buf, ssize_t buf_len) const;
+
+  void lua(lua_State *vm, const char *label) const;
+  const char *toHexString(char *buf, ssize_t buf_len) const;
 };
 
 #endif /* _BITMAP128_H_ */

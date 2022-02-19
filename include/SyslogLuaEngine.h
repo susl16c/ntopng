@@ -23,18 +23,18 @@
 #define _SYSLOG_LUA_ENGINE_H_
 
 class SyslogLuaEngine : public LuaEngine {
- private:
+private:
   char script_path[MAX_PATH];
   bool initialized;
 
   bool pcall(int num_args, int num_results);
 
- public:
+public:
   SyslogLuaEngine(NetworkInterface *iface);
   virtual ~SyslogLuaEngine();
 
-  void handleEvent(const char *producer, const char *message,
-    const char *host, int priority);
+  void handleEvent(const char *producer, const char *message, const char *host,
+                   int priority);
 };
 
 #endif

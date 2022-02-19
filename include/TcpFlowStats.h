@@ -25,24 +25,25 @@
 #include "ntop_includes.h"
 
 class TcpFlowStats {
- private:
+private:
   u_int32_t numSynFlows, numEstablishedFlows, numResetFlows, numFinFlows;
 
- public:
+public:
   TcpFlowStats();
-  
-  inline void incSyn()         { numSynFlows++;    }
-  inline void incEstablished() { numEstablishedFlows++; }
-  inline void incReset()       { numResetFlows++;       }
-  inline void incFin()         { numFinFlows++;         }
 
-  char* serialize();
+  inline void incSyn() { numSynFlows++; }
+  inline void incEstablished() { numEstablishedFlows++; }
+  inline void incReset() { numResetFlows++; }
+  inline void incFin() { numFinFlows++; }
+
+  char *serialize();
   void deserialize(json_object *o);
-  json_object* getJSONObject();
-  void lua(lua_State* vm, const char *label);
+  json_object *getJSONObject();
+  void lua(lua_State *vm, const char *label);
   inline void sum(TcpFlowStats *s) const {
-    s->numSynFlows += numSynFlows, s->numEstablishedFlows += numEstablishedFlows,
-      s->numResetFlows += numResetFlows, s->numFinFlows += numFinFlows;
+    s->numSynFlows += numSynFlows,
+        s->numEstablishedFlows += numEstablishedFlows,
+        s->numResetFlows += numResetFlows, s->numFinFlows += numFinFlows;
   };
 };
 

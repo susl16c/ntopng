@@ -24,8 +24,7 @@
 
 #include "ntop_includes.h"
 
-template <typename T>
-class Bitmap {
+template <typename T> class Bitmap {
 private:
   T bitmap;
 
@@ -36,20 +35,24 @@ public:
   inline void reset() { bitmap = 0; };
   inline void setBit(u_int8_t id) { bitmap |= ((T)1) << id; };
   inline void clearBit(u_int8_t id) { bitmap &= ~(((T)1) << id); };
-  inline bool isSetBit(u_int8_t id) const { return (((bitmap >> id) & 1) ? true : false); };
+  inline bool isSetBit(u_int8_t id) const {
+    return (((bitmap >> id) & 1) ? true : false);
+  };
   inline void bitmapOr(const Bitmap b) { bitmap |= b.bitmap; };
   inline void set(const Bitmap *b) { bitmap = b->bitmap; };
   inline bool equal(const Bitmap *b) const { return bitmap == b->bitmap; };
-  
-  void lua(lua_State* vm, const char *label) const {
+
+  void lua(lua_State *vm, const char *label) const {
     lua_newtable(vm);
 
-    for(u_int i=0; i < numBits(); i++) {
-      if(isSetBit(i)) {
-	lua_pushboolean(vm, true); /* The boolean indicating this risk is set            */
-	lua_pushinteger(vm, i);    /* The integer risk id, used as key of this lua table */
-	lua_insert(vm, -2);
-	lua_settable(vm, -3);
+    for (u_int i = 0; i < numBits(); i++) {
+      if (isSetBit(i)) {
+        lua_pushboolean(vm,
+                        true); /* The boolean indicating this risk is set */
+        lua_pushinteger(
+            vm, i); /* The integer risk id, used as key of this lua table */
+        lua_insert(vm, -2);
+        lua_settable(vm, -3);
       }
     }
 

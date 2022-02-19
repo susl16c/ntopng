@@ -24,26 +24,27 @@
 /* *************************************** */
 
 RemoteHost::RemoteHost(NetworkInterface *_iface, Mac *_mac, VLANid _vlanId,
-		       u_int16_t _observation_point_id, IpAddress *_ip)
-  : Host(_iface, _mac, _vlanId, _observation_point_id, _ip) {
+                       u_int16_t _observation_point_id, IpAddress *_ip)
+    : Host(_iface, _mac, _vlanId, _observation_point_id, _ip) {
 #ifdef REMOTEHOST_DEBUG
   char buf[48];
-  ntop->getTrace()->traceEvent(TRACE_NORMAL, "Instantiating REMOTE host %s", _ip ? _ip->print(buf, sizeof(buf)) : "");
+  ntop->getTrace()->traceEvent(TRACE_NORMAL, "Instantiating REMOTE host %s",
+                               _ip ? _ip->print(buf, sizeof(buf)) : "");
 #endif
   initialize();
 }
 
 /* *************************************** */
 
-RemoteHost::RemoteHost(NetworkInterface *_iface, char *ipAddress, VLANid _vlanId, u_int16_t _observation_point_id)
-  : Host(_iface, ipAddress, _vlanId, _observation_point_id) {
+RemoteHost::RemoteHost(NetworkInterface *_iface, char *ipAddress,
+                       VLANid _vlanId, u_int16_t _observation_point_id)
+    : Host(_iface, ipAddress, _vlanId, _observation_point_id) {
   initialize();
 }
 
 /* *************************************** */
 
-RemoteHost::~RemoteHost() {
-}
+RemoteHost::~RemoteHost() {}
 
 /* *************************************** */
 
@@ -62,12 +63,13 @@ void RemoteHost::initialize() {
   char rsp[256];
 
   stats = allocateStats();
-  updateHostPool(true /* inline with packet processing */, true /* first inc */);
+  updateHostPool(true /* inline with packet processing */,
+                 true /* first inc */);
 
-  if(ntop->getPrefs()->is_dns_resolution_enabled_for_all_hosts()) {
-  /* Just ask ntopng to resolve the name. Actual name will be grabbed once needed
-     using the getter.
-   */    
+  if (ntop->getPrefs()->is_dns_resolution_enabled_for_all_hosts()) {
+    /* Just ask ntopng to resolve the name. Actual name will be grabbed once
+       needed using the getter.
+     */
     ntop->getRedis()->getAddress(host, rsp, sizeof(rsp), true);
   }
 

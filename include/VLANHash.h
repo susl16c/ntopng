@@ -23,15 +23,15 @@
 #define _VLAN_HASH_H_
 
 #include "ntop_includes.h"
- 
+
 class VLANHash : public GenericHash {
- private:
+private:
   Mutex m;
 
- public:
+public:
   VLANHash(NetworkInterface *iface, u_int _num_hashes, u_int _max_hash_size);
 
-  VLAN* get(VLANid vlan_id, bool is_inline_call);
+  VLAN *get(VLANid vlan_id, bool is_inline_call);
 
 #ifdef VLAN_DEBUG
   void printHash();

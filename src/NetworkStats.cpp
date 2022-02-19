@@ -23,7 +23,9 @@
 
 /* *************************************** */
 
-NetworkStats::NetworkStats(NetworkInterface *iface, u_int8_t _network_id) : InterfaceMemberAlertableEntity(iface, alert_entity_network), GenericTrafficElement(), Score(iface) {
+NetworkStats::NetworkStats(NetworkInterface *iface, u_int8_t _network_id)
+    : InterfaceMemberAlertableEntity(iface, alert_entity_network),
+      GenericTrafficElement(), Score(iface) {
   const char *netname;
   network_id = _network_id;
   numHosts = 0;
@@ -36,10 +38,14 @@ NetworkStats::NetworkStats(NetworkInterface *iface, u_int8_t _network_id) : Inte
   traffic_tx_behavior = NULL;
   traffic_rx_behavior = NULL;
 
-  if(ntop->getPrefs()->isNetworkBehavourAnalysisEnabled()) {
+  if (ntop->getPrefs()->isNetworkBehavourAnalysisEnabled()) {
     score_behavior = new BehaviorAnalysis();
-    traffic_tx_behavior = new BehaviorAnalysis(0.9 /* Alpha parameter */, 0.1 /* Beta parameter */, 0.05 /* Significance */, true /* Counter */);
-    traffic_rx_behavior = new BehaviorAnalysis(0.9 /* Alpha parameter */, 0.1 /* Beta parameter */, 0.05 /* Significance */, true /* Counter */); 
+    traffic_tx_behavior = new BehaviorAnalysis(
+        0.9 /* Alpha parameter */, 0.1 /* Beta parameter */,
+        0.05 /* Significance */, true /* Counter */);
+    traffic_rx_behavior = new BehaviorAnalysis(
+        0.9 /* Alpha parameter */, 0.1 /* Beta parameter */,
+        0.05 /* Significance */, true /* Counter */);
   }
 #endif
 
@@ -49,17 +55,17 @@ NetworkStats::NetworkStats(NetworkInterface *iface, u_int8_t _network_id) : Inte
 
 /* *************************************** */
 
-bool NetworkStats::match(const AddressTree * const tree) const {
+bool NetworkStats::match(const AddressTree *const tree) const {
   IpAddress *network_address = NULL;
   u_int8_t network_prefix;
   bool res = true;
 
-  if(!tree)
+  if (!tree)
     return res;
 
   ntop->getLocalNetworkIp(network_id, &network_address, &network_prefix);
 
-  if(network_address) {
+  if (network_address) {
 #if 0
     char buf[64];
     ntop->getTrace()->traceEvent(TRACE_NORMAL, "Attempting to match %s", network_address->print(buf, sizeof(buf)));
@@ -74,18 +80,22 @@ bool NetworkStats::match(const AddressTree * const tree) const {
 
 NetworkStats::~NetworkStats() {
 #ifdef NTOPNG_PRO
-  if(score_behavior) delete(score_behavior);
-  if(traffic_tx_behavior) delete(traffic_tx_behavior);
-  if(traffic_rx_behavior) delete(traffic_rx_behavior);
+  if (score_behavior)
+    delete (score_behavior);
+  if (traffic_tx_behavior)
+    delete (traffic_tx_behavior);
+  if (traffic_rx_behavior)
+    delete (traffic_rx_behavior);
 #endif
 }
 
 /* *************************************** */
 
-void NetworkStats::lua(lua_State* vm, bool diff) {
+void NetworkStats::lua(lua_State *vm, bool diff) {
   int hits;
 
-  lua_push_str_table_entry(vm, "network_key", ntop->getLocalNetworkName(network_id));
+  lua_push_str_table_entry(vm, "network_key",
+                           ntop->getLocalNetworkName(network_id));
   lua_push_uint64_table_entry(vm, "network_id", network_id);
   lua_push_uint64_table_entry(vm, "num_hosts", getNumHosts());
   lua_push_uint64_table_entry(vm, "engaged_alerts", getNumEngagedAlerts());
@@ -103,11 +113,13 @@ void NetworkStats::lua(lua_State* vm, bool diff) {
   lua_settable(vm, -3);
 
 #ifdef NTOPNG_PRO
-  if(traffic_rx_behavior)
-    traffic_rx_behavior->luaBehavior(vm, "traffic_rx_behavior", diff ? NETWORK_BEHAVIOR_REFRESH : 0);
-  if(traffic_tx_behavior)
-    traffic_tx_behavior->luaBehavior(vm, "traffic_tx_behavior", diff ? NETWORK_BEHAVIOR_REFRESH : 0);
-  if(score_behavior)
+  if (traffic_rx_behavior)
+    traffic_rx_behavior->luaBehavior(vm, "traffic_rx_behavior",
+                                     diff ? NETWORK_BEHAVIOR_REFRESH : 0);
+  if (traffic_tx_behavior)
+    traffic_tx_behavior->luaBehavior(vm, "traffic_tx_behavior",
+                                     diff ? NETWORK_BEHAVIOR_REFRESH : 0);
+  if (score_behavior)
     score_behavior->luaBehavior(vm, "score_behavior");
 #endif
 
@@ -115,17 +127,17 @@ void NetworkStats::lua(lua_State* vm, bool diff) {
   tcp_packet_stats_egress.lua(vm, "tcpPacketStats.egress");
   tcp_packet_stats_inner.lua(vm, "tcpPacketStats.inner");
 
-  if((hits = syn_flood_victim_alert.hits()))
+  if ((hits = syn_flood_victim_alert.hits()))
     lua_push_uint64_table_entry(vm, "hits.syn_flood_victim", hits);
-  if((hits = flow_flood_victim_alert.hits()))
+  if ((hits = flow_flood_victim_alert.hits()))
     lua_push_uint64_table_entry(vm, "hits.flow_flood_victim", hits);
 
   hits = 0;
   if (syn_recvd_last_min > synack_sent_last_min)
     hits = syn_recvd_last_min - synack_sent_last_min;
-  if(hits)
+  if (hits)
     lua_push_uint64_table_entry(vm, "hits.syn_scan_victim", hits);
-  
+
   GenericTrafficElement::lua(vm, true);
   Score::lua_get_score(vm);
   Score::lua_get_score_breakdown(vm);
@@ -134,9 +146,12 @@ void NetworkStats::lua(lua_State* vm, bool diff) {
 /* *************************************** */
 
 bool NetworkStats::serialize(json_object *my_object) {
-  json_object_object_add(my_object, "ingress", json_object_new_int64(ingress.getNumBytes()));
-  json_object_object_add(my_object, "egress", json_object_new_int64(egress.getNumBytes()));
-  json_object_object_add(my_object, "inner", json_object_new_int64(inner.getNumBytes()));
+  json_object_object_add(my_object, "ingress",
+                         json_object_new_int64(ingress.getNumBytes()));
+  json_object_object_add(my_object, "egress",
+                         json_object_new_int64(egress.getNumBytes()));
+  json_object_object_add(my_object, "inner",
+                         json_object_new_int64(inner.getNumBytes()));
 
   return true;
 }
@@ -147,19 +162,21 @@ void NetworkStats::deserialize(json_object *o) {
   json_object *obj;
   time_t now = time(NULL);
 
-  if(json_object_object_get_ex(o, "ingress", &obj)) ingress.incStats(now, 0, json_object_get_int(obj));
-  if(json_object_object_get_ex(o, "egress", &obj)) egress.incStats(now, 0, json_object_get_int(obj));
-  if(json_object_object_get_ex(o, "inner", &obj)) inner.incStats(now, 0, json_object_get_int(obj));
+  if (json_object_object_get_ex(o, "ingress", &obj))
+    ingress.incStats(now, 0, json_object_get_int(obj));
+  if (json_object_object_get_ex(o, "egress", &obj))
+    egress.incStats(now, 0, json_object_get_int(obj));
+  if (json_object_object_get_ex(o, "inner", &obj))
+    inner.incStats(now, 0, json_object_get_int(obj));
 }
 
 /* *************************************** */
 
 void NetworkStats::housekeepAlerts(ScriptPeriodicity p) {
-  switch(p) {
+  switch (p) {
   case minute_script:
-      flow_flood_victim_alert.reset_hits(),
-      syn_flood_victim_alert.reset_hits();
-      syn_recvd_last_min = synack_sent_last_min = 0;
+    flow_flood_victim_alert.reset_hits(), syn_flood_victim_alert.reset_hits();
+    syn_recvd_last_min = synack_sent_last_min = 0;
     break;
   default:
     break;
@@ -169,7 +186,7 @@ void NetworkStats::housekeepAlerts(ScriptPeriodicity p) {
 /* *************************************** */
 
 void NetworkStats::updateSynAlertsCounter(time_t when, bool syn_sent) {
-  if(!syn_sent) {
+  if (!syn_sent) {
     syn_flood_victim_alert.inc(when, this);
     syn_recvd_last_min++;
   }
@@ -178,20 +195,20 @@ void NetworkStats::updateSynAlertsCounter(time_t when, bool syn_sent) {
 /* *************************************** */
 
 void NetworkStats::updateSynAckAlertsCounter(time_t when, bool synack_sent) {
-  if(synack_sent)
+  if (synack_sent)
     synack_sent_last_min++;
 }
 
 /* *************************************** */
 
 void NetworkStats::incNumFlows(time_t t, bool as_client) {
-  if(!as_client)
+  if (!as_client)
     flow_flood_victim_alert.inc(t, this);
 }
 
 /* ***************************************** */
 
-void NetworkStats::updateStats(const struct timeval *tv)  {
+void NetworkStats::updateStats(const struct timeval *tv) {
   GenericTrafficElement::updateStats(tv);
 
 #ifdef NTOPNG_PRO
@@ -205,23 +222,26 @@ void NetworkStats::updateStats(const struct timeval *tv)  {
 
 void NetworkStats::updateBehaviorStats(const struct timeval *tv) {
   /* 5 Min Update */
-  if(tv->tv_sec >= nextMinPeriodicUpdate) {
+  if (tv->tv_sec >= nextMinPeriodicUpdate) {
     char score_buf[128], tx_buf[128], rx_buf[128];
 
     /* Traffic behavior stats update, currently score, traffic rx and tx */
-    if(score_behavior) {
+    if (score_behavior) {
       snprintf(score_buf, sizeof(score_buf), "Net %d | score", network_id);
-      score_behavior->updateBehavior(getAlertInterface(), getScore(), score_buf);
+      score_behavior->updateBehavior(getAlertInterface(), getScore(),
+                                     score_buf);
     }
 
-    if(traffic_tx_behavior) {
+    if (traffic_tx_behavior) {
       snprintf(tx_buf, sizeof(tx_buf), "Net %d | traffic tx", network_id);
-      traffic_tx_behavior->updateBehavior(getAlertInterface(), getNumBytesSent(), tx_buf);
+      traffic_tx_behavior->updateBehavior(getAlertInterface(),
+                                          getNumBytesSent(), tx_buf);
     }
 
-    if(traffic_rx_behavior) {
+    if (traffic_rx_behavior) {
       snprintf(rx_buf, sizeof(rx_buf), "Net %d | traffic rx", network_id);
-      traffic_rx_behavior->updateBehavior(getAlertInterface(), getNumBytesRcvd(), rx_buf);
+      traffic_rx_behavior->updateBehavior(getAlertInterface(),
+                                          getNumBytesRcvd(), rx_buf);
     }
 
     nextMinPeriodicUpdate = tv->tv_sec + NETWORK_BEHAVIOR_REFRESH;

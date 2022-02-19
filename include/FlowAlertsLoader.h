@@ -25,7 +25,7 @@
 #include "ntop_includes.h"
 
 class FlowAlertsLoader { /* A single instance inside Ntop */
- private:
+private:
   /* For each alert, keep the corresponding total score. */
   u_int8_t alert_to_score[MAX_DEFINED_FLOW_ALERT_TYPE];
   /* For each alert, keep its mapping with an nDPI risk (if any) */
@@ -34,7 +34,7 @@ class FlowAlertsLoader { /* A single instance inside Ntop */
   void registerAlert(FlowAlertType alert_type, u_int8_t alert_score);
   void registerRisk(FlowAlertType alert_type, ndpi_risk_enum risk);
 
- public:
+public:
   FlowAlertsLoader();
   virtual ~FlowAlertsLoader();
 

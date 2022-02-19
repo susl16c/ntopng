@@ -25,29 +25,34 @@
 #include "ntop_includes.h"
 
 class FlowCheck : public Check {
- private:
+private:
   bool has_protocol_detected, has_periodic_update, has_flow_end, has_flow_begin;
 
- public:
-  FlowCheck(NtopngEdition _edition, bool _packet_interface_only, bool _nedge_exclude, bool _nedge_only,
-	       bool _has_protocok_detected, bool _has_periodic_update, bool _has_flow_end, bool _has_flow_begin = false);
+public:
+  FlowCheck(NtopngEdition _edition, bool _packet_interface_only,
+            bool _nedge_exclude, bool _nedge_only, bool _has_protocok_detected,
+            bool _has_periodic_update, bool _has_flow_end,
+            bool _has_flow_begin = false);
   virtual ~FlowCheck();
-  
+
   /* Check hooks */
-  virtual void protocolDetected(Flow *f) {};
-  virtual void periodicUpdate(Flow *f)   {};
-  virtual void flowEnd(Flow *f)          {};
-  virtual void flowBegin(Flow *f)        {};
+  virtual void protocolDetected(Flow *f){};
+  virtual void periodicUpdate(Flow *f){};
+  virtual void flowEnd(Flow *f){};
+  virtual void flowBegin(Flow *f){};
 
   /* Used to build an alert when triggerAlertAsync is used */
   virtual FlowAlert *buildAlert(Flow *f) { return NULL; };
 
-  void addCheck(std::list<FlowCheck*> *l, NetworkInterface *iface, FlowChecks check);
+  void addCheck(std::list<FlowCheck *> *l, NetworkInterface *iface,
+                FlowChecks check);
   virtual bool loadConfiguration(json_object *config);
-  
-  virtual std::string getName()        const = 0;
 
-  static void computeCliSrvScore(FlowAlertType alert_type, risk_percentage cli_pctg, u_int8_t *cli_score, u_int8_t *srv_score);
+  virtual std::string getName() const = 0;
+
+  static void computeCliSrvScore(FlowAlertType alert_type,
+                                 risk_percentage cli_pctg, u_int8_t *cli_score,
+                                 u_int8_t *srv_score);
 };
 
 #endif /* _FLOW_CHECK_H_ */

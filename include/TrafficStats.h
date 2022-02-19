@@ -25,30 +25,34 @@
 #include "ntop_includes.h"
 
 class TrafficStats {
- private:
+private:
   MonitoredCounter<u_int64_t> numPkts, numBytes;
 
- public:
+public:
   TrafficStats();
   TrafficStats(const TrafficStats &ts) {
     numPkts = MonitoredCounter<u_int64_t>(ts.numPkts),
-      numBytes = MonitoredCounter<u_int64_t>(ts.numBytes);
+    numBytes = MonitoredCounter<u_int64_t>(ts.numBytes);
   };
-  
+
   inline void incStats(time_t t, u_int64_t num_pkts, u_int64_t num_bytes) {
     numPkts.inc(num_pkts), numBytes.inc(num_bytes);
     numPkts.computeAnomalyIndex(t), numBytes.computeAnomalyIndex(t);
-  };  
-  inline void resetStats()                   { numPkts.reset(), numBytes.reset(); };
-  inline u_int64_t getNumPkts()      const   { return(numPkts.get());             };
-  inline u_int64_t getNumBytes()     const   { return(numBytes.get());            };
-  inline u_int64_t getPktsAnomaly()  const   { return(numPkts.getAnomalyIndex()); };
-  inline u_int64_t getBytesAnomaly() const   { return(numBytes.getAnomalyIndex());};
+  };
+  inline void resetStats() { numPkts.reset(), numBytes.reset(); };
+  inline u_int64_t getNumPkts() const { return (numPkts.get()); };
+  inline u_int64_t getNumBytes() const { return (numBytes.get()); };
+  inline u_int64_t getPktsAnomaly() const {
+    return (numPkts.getAnomalyIndex());
+  };
+  inline u_int64_t getBytesAnomaly() const {
+    return (numBytes.getAnomalyIndex());
+  };
   void printStats();
 
-  char* serialize();
+  char *serialize();
   void deserialize(json_object *o);
-  json_object* getJSONObject();
+  json_object *getJSONObject();
 };
 
 #endif /* _TRAFFIC_STATS_H_ */

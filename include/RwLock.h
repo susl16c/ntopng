@@ -27,7 +27,7 @@
 /* ******************************* */
 
 class RwLock {
- private:
+private:
 #ifndef HAVE_RW_LOCK
   Mutex m;
 #else
@@ -36,7 +36,7 @@ class RwLock {
   void lock(const char *filename, int line, bool readonly);
   bool trylock(const char *filename, int line, bool readonly);
 
- public:
+public:
   RwLock();
   ~RwLock();
 
@@ -45,6 +45,5 @@ class RwLock {
   bool trywrlock(const char *filename, int line);
   void unlock(const char *filename, int line);
 };
-
 
 #endif /* _RWLOCK_H_ */

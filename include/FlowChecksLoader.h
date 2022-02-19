@@ -24,33 +24,49 @@
 
 #include "ntop_includes.h"
 
-class FlowChecksLoader : public ChecksLoader { /* A single instance inside Ntop */
- private:
+class FlowChecksLoader
+    : public ChecksLoader { /* A single instance inside Ntop */
+private:
   /* nDPI risks not currently hanlded by registered checks */
   ndpi_risk unhandled_ndpi_risks;
-  /* These are check instances, that is classes instantiated at runtime each one with a given configuration */
-  std::map<std::string, FlowCheck*> cb_all; /* All the checks instantiated */
+  /* These are check instances, that is classes instantiated at runtime each one
+   * with a given configuration */
+  std::map<std::string, FlowCheck *> cb_all; /* All the checks instantiated */
 
-  std::list<FlowCheck*>* getChecks(NetworkInterface *iface, FlowChecks check);
+  std::list<FlowCheck *> *getChecks(NetworkInterface *iface, FlowChecks check);
   void registerCheck(FlowCheck *cb);
-  
+
   void registerChecks();
   void loadConfiguration();
 
- public:
+public:
   FlowChecksLoader();
   virtual ~FlowChecksLoader();
 
   void printChecks();
 
-  inline std::list<FlowCheck*>* getProtocolDetectedChecks(NetworkInterface *iface) { return(getChecks(iface, flow_check_protocol_detected)); }
-  inline std::list<FlowCheck*>* getPeriodicUpdateChecks(NetworkInterface *iface)   { return(getChecks(iface, flow_check_periodic_update));   }
-  inline std::list<FlowCheck*>* getFlowEndChecks(NetworkInterface *iface)          { return(getChecks(iface, flow_check_flow_end));          }
-  inline std::list<FlowCheck*>* getFlowBeginChecks(NetworkInterface *iface)        { return(getChecks(iface, flow_check_flow_begin));          }
-  inline std::list<FlowCheck*>* getNoneFlowChecks(NetworkInterface *iface)         { return(getChecks(iface, flow_check_flow_none));         }
+  inline std::list<FlowCheck *> *
+  getProtocolDetectedChecks(NetworkInterface *iface) {
+    return (getChecks(iface, flow_check_protocol_detected));
+  }
+  inline std::list<FlowCheck *> *
+  getPeriodicUpdateChecks(NetworkInterface *iface) {
+    return (getChecks(iface, flow_check_periodic_update));
+  }
+  inline std::list<FlowCheck *> *getFlowEndChecks(NetworkInterface *iface) {
+    return (getChecks(iface, flow_check_flow_end));
+  }
+  inline std::list<FlowCheck *> *getFlowBeginChecks(NetworkInterface *iface) {
+    return (getChecks(iface, flow_check_flow_begin));
+  }
+  inline std::list<FlowCheck *> *getNoneFlowChecks(NetworkInterface *iface) {
+    return (getChecks(iface, flow_check_flow_none));
+  }
   inline ndpi_risk getUnhandledRisks() const { return unhandled_ndpi_risks; };
-  inline bool isRiskUnhandled(ndpi_risk_enum risk) const { return NDPI_ISSET_BIT(unhandled_ndpi_risks, risk); };
-  bool luaCheckInfo(lua_State* vm, std::string check_name) const;
+  inline bool isRiskUnhandled(ndpi_risk_enum risk) const {
+    return NDPI_ISSET_BIT(unhandled_ndpi_risks, risk);
+  };
+  bool luaCheckInfo(lua_State *vm, std::string check_name) const;
 };
 
 #endif /* _FLOW_CHECKS_LOADER_H_ */

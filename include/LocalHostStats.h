@@ -22,8 +22,8 @@
 #ifndef _LOCAL_HOST_STATS_H_
 #define _LOCAL_HOST_STATS_H_
 
-class LocalHostStats: public HostStats {
- protected:
+class LocalHostStats : public HostStats {
+protected:
   /* Written by NetworkInterface::processPacket thread */
   DnsStats *dns;
   HTTPstats *http;
@@ -39,7 +39,7 @@ class LocalHostStats: public HostStats {
 
   /* Estimate of the number of different Domain Names contacted */
   Cardinality num_contacted_domain_names;
- 
+
   /* Estimate the number of contacted hosts using HyperLogLog */
   struct ndpi_hll hll_contacted_hosts;
   double old_hll_value, new_hll_value, hll_delta_value;
@@ -47,15 +47,18 @@ class LocalHostStats: public HostStats {
 
   /* Estimate the number of contacted countries using HyperLogLog */
   struct ndpi_hll hll_countries_contacts;
-  u_int8_t old_hll_countries_value, new_hll_countries_value, hll_delta_countries_value;
+  u_int8_t old_hll_countries_value, new_hll_countries_value,
+      hll_delta_countries_value;
 
-
-  Cardinality num_contacted_hosts_as_client, /* # of hosts contacted by this host   */
-    num_host_contacts_as_server,             /* # of hosts that contacted this host */
-    num_contacted_services_as_client,        /* DNS, TLS, HTTP....                  */
-    num_contacted_ports_as_client,           /* # of different ports this host has contacted          */
-    num_host_contacted_ports_as_server,      /* # of different server ports contacted by remote peers */
-    contacts_as_cli, contacts_as_srv;        /* Minute reset host contacts          */
+  Cardinality
+      num_contacted_hosts_as_client, /* # of hosts contacted by this host   */
+      num_host_contacts_as_server,   /* # of hosts that contacted this host */
+      num_contacted_services_as_client,   /* DNS, TLS, HTTP....   */
+      num_contacted_ports_as_client,      /* # of different ports this host has
+                                             contacted          */
+      num_host_contacted_ports_as_server, /* # of different server ports
+                                             contacted by remote peers */
+      contacts_as_cli, contacts_as_srv;   /* Minute reset host contacts   */
 
   PeerStats *peers;
 
@@ -67,79 +70,131 @@ class LocalHostStats: public HostStats {
 #if defined(NTOPNG_PRO)
   void resetTrafficStats();
 #endif
- public:
+public:
   LocalHostStats(Host *_host);
   LocalHostStats(LocalHostStats &s);
   virtual ~LocalHostStats();
 
-  inline ICMPstats* getICMPStats()  const  { return(icmp); }
+  inline ICMPstats *getICMPStats() const { return (icmp); }
 
-  virtual void incStats(time_t when, u_int8_t l4_proto,
-			u_int ndpi_proto, ndpi_protocol_category_t ndpi_category,
-			custom_app_t custom_app,
-			u_int64_t sent_packets, u_int64_t sent_bytes, u_int64_t sent_goodput_bytes,
-			u_int64_t rcvd_packets, u_int64_t rcvd_bytes, u_int64_t rcvd_goodput_bytes,
-			bool peer_is_unicast);
+  virtual void incStats(time_t when, u_int8_t l4_proto, u_int ndpi_proto,
+                        ndpi_protocol_category_t ndpi_category,
+                        custom_app_t custom_app, u_int64_t sent_packets,
+                        u_int64_t sent_bytes, u_int64_t sent_goodput_bytes,
+                        u_int64_t rcvd_packets, u_int64_t rcvd_bytes,
+                        u_int64_t rcvd_goodput_bytes, bool peer_is_unicast);
   virtual void updateStats(const struct timeval *tv);
-  virtual void getJSONObject(json_object *my_object, DetailsLevel details_level);
+  virtual void getJSONObject(json_object *my_object,
+                             DetailsLevel details_level);
   virtual void deserialize(json_object *obj);
-  virtual void lua(lua_State* vm, bool mask_host, DetailsLevel details_level);
+  virtual void lua(lua_State *vm, bool mask_host, DetailsLevel details_level);
   virtual void resetTopSitesData();
-  virtual void addContactedDomainName(char* domain_name)    { num_contacted_domain_names.addElement(domain_name,strlen(domain_name));  }
-  virtual u_int32_t getDomainNamesCardinality()             { return num_contacted_domain_names.getEstimate(); }  
-  virtual void resetDomainNamesCardinality()                { num_contacted_domain_names.reset();              } 
+  virtual void addContactedDomainName(char *domain_name) {
+    num_contacted_domain_names.addElement(domain_name, strlen(domain_name));
+  }
+  virtual u_int32_t getDomainNamesCardinality() {
+    return num_contacted_domain_names.getEstimate();
+  }
+  virtual void resetDomainNamesCardinality() {
+    num_contacted_domain_names.reset();
+  }
 
-  virtual void luaDNS(lua_State *vm, bool verbose)  { if(dns) dns->lua(vm, verbose); }
-  virtual void luaHTTP(lua_State *vm)  { if(http) http->lua(vm); }
-  virtual void luaICMP(lua_State *vm, bool isV4, bool verbose)    { if (icmp) icmp->lua(isV4, vm, verbose); }
+  virtual void luaDNS(lua_State *vm, bool verbose) {
+    if (dns)
+      dns->lua(vm, verbose);
+  }
+  virtual void luaHTTP(lua_State *vm) {
+    if (http)
+      http->lua(vm);
+  }
+  virtual void luaICMP(lua_State *vm, bool isV4, bool verbose) {
+    if (icmp)
+      icmp->lua(isV4, vm, verbose);
+  }
   virtual void luaPeers(lua_State *vm);
   virtual void incrVisitedWebSite(char *hostname);
-  virtual void lua_get_timeseries(lua_State* vm);
+  virtual void lua_get_timeseries(lua_State *vm);
   void luaContactsBehaviour(lua_State *vm);
-  virtual void luaHostBehaviour(lua_State* vm);
-  virtual void luaCountriesBehaviour(lua_State* vm);
+  virtual void luaHostBehaviour(lua_State *vm);
+  virtual void luaCountriesBehaviour(lua_State *vm);
   virtual bool hasAnomalies(time_t when);
-  virtual void luaAnomalies(lua_State* vm, time_t when);
-  virtual HTTPstats* getHTTPstats() { return(http); };
-  virtual DnsStats*  getDNSstats()  { return(dns);  };
-  virtual ICMPstats* getICMPstats() { return(icmp); };
-  virtual u_int16_t getNumActiveContactsAsClient() { return(num_contacts_as_cli); }
-  virtual u_int16_t getNumActiveContactsAsServer() { return(num_contacts_as_srv); }
+  virtual void luaAnomalies(lua_State *vm, time_t when);
+  virtual HTTPstats *getHTTPstats() { return (http); };
+  virtual DnsStats *getDNSstats() { return (dns); };
+  virtual ICMPstats *getICMPstats() { return (icmp); };
+  virtual u_int16_t getNumActiveContactsAsClient() {
+    return (num_contacts_as_cli);
+  }
+  virtual u_int16_t getNumActiveContactsAsServer() {
+    return (num_contacts_as_srv);
+  }
 
-  virtual void incCliContactedPorts(u_int16_t port)  { num_contacted_ports_as_client.addElement(port);      }
-  virtual void incSrvPortsContacts(u_int16_t port)   { num_host_contacted_ports_as_server.addElement(port); }
+  virtual void incCliContactedPorts(u_int16_t port) {
+    num_contacted_ports_as_client.addElement(port);
+  }
+  virtual void incSrvPortsContacts(u_int16_t port) {
+    num_host_contacted_ports_as_server.addElement(port);
+  }
 
-  virtual u_int32_t getSlidingAvgCliContactedPeers() { return(peers->getCliSlidingEstimate()); };
-  virtual u_int32_t getSlidingAvgSrvContactedPeers() { return(peers->getSrvSlidingEstimate()); };
-  virtual u_int32_t getTotAvgCliContactedPeers()     { return(peers->getCliTotEstimate()); };
-  virtual u_int32_t getTotAvgSrvContactedPeers()     { return(peers->getSrvTotEstimate()); };
-  virtual bool getSlidingWinStatus()                 { return(peers->getSlidingWinStatus()); };
+  virtual u_int32_t getSlidingAvgCliContactedPeers() {
+    return (peers->getCliSlidingEstimate());
+  };
+  virtual u_int32_t getSlidingAvgSrvContactedPeers() {
+    return (peers->getSrvSlidingEstimate());
+  };
+  virtual u_int32_t getTotAvgCliContactedPeers() {
+    return (peers->getCliTotEstimate());
+  };
+  virtual u_int32_t getTotAvgSrvContactedPeers() {
+    return (peers->getSrvTotEstimate());
+  };
+  virtual bool getSlidingWinStatus() { return (peers->getSlidingWinStatus()); };
 
-  virtual u_int32_t getNTPContactCardinality()  { return(num_ntp_servers.getEstimate());  };
-  virtual u_int32_t getDNSContactCardinality()  { return(num_dns_servers.getEstimate());  };
-  virtual u_int32_t getSMTPContactCardinality() { return(num_smtp_servers.getEstimate()); };
-  virtual void incNTPContactCardinality(Host *h)  { if(h->get_ip()) num_ntp_servers.addElement(h->get_ip()->key());  };
-  virtual void incDNSContactCardinality(Host *h)  { if(h->get_ip()) num_dns_servers.addElement(h->get_ip()->key());  };
-  virtual void incSMTPContactCardinality(Host *h) { if(h->get_ip()) num_smtp_servers.addElement(h->get_ip()->key()); };
+  virtual u_int32_t getNTPContactCardinality() {
+    return (num_ntp_servers.getEstimate());
+  };
+  virtual u_int32_t getDNSContactCardinality() {
+    return (num_dns_servers.getEstimate());
+  };
+  virtual u_int32_t getSMTPContactCardinality() {
+    return (num_smtp_servers.getEstimate());
+  };
+  virtual void incNTPContactCardinality(Host *h) {
+    if (h->get_ip())
+      num_ntp_servers.addElement(h->get_ip()->key());
+  };
+  virtual void incDNSContactCardinality(Host *h) {
+    if (h->get_ip())
+      num_dns_servers.addElement(h->get_ip()->key());
+  };
+  virtual void incSMTPContactCardinality(Host *h) {
+    if (h->get_ip())
+      num_smtp_servers.addElement(h->get_ip()->key());
+  };
 
   virtual void incCliContactedHosts(IpAddress *peer) {
     peer->incCardinality(&num_contacted_hosts_as_client);
     peer->incCardinality(&contacts_as_cli);
   }
-  virtual void incSrvHostContacts(IpAddress *peer)   {
+  virtual void incSrvHostContacts(IpAddress *peer) {
     peer->incCardinality(&num_host_contacts_as_server);
     peer->incCardinality(&contacts_as_srv);
   }
 
-  virtual void incContactedService(char *name)       {
-    if(name && (name[0] != '\0'))
+  virtual void incContactedService(char *name) {
+    if (name && (name[0] != '\0'))
       num_contacted_services_as_client.addElement(name, strlen(name));
   }
 
-  virtual void incCountriesContacts(char *country)    { ndpi_hll_add(&hll_countries_contacts, country, strlen(country)); }
-  virtual u_int8_t getCountriesContactsCardinality()  { return((u_int8_t)ndpi_hll_count(&hll_countries_contacts));       }
-  virtual void resetCountriesContacts()               { ndpi_hll_reset(&hll_countries_contacts);                         } 
-
+  virtual void incCountriesContacts(char *country) {
+    ndpi_hll_add(&hll_countries_contacts, country, strlen(country));
+  }
+  virtual u_int8_t getCountriesContactsCardinality() {
+    return ((u_int8_t)ndpi_hll_count(&hll_countries_contacts));
+  }
+  virtual void resetCountriesContacts() {
+    ndpi_hll_reset(&hll_countries_contacts);
+  }
 };
 
 #endif

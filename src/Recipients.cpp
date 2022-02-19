@@ -30,8 +30,8 @@ Recipients::Recipients() {
 /* *************************************** */
 
 Recipients::~Recipients() {
-  for(int i = 0; i < MAX_NUM_RECIPIENTS; i++) {
-    if(recipient_queues[i])
+  for (int i = 0; i < MAX_NUM_RECIPIENTS; i++) {
+    if (recipient_queues[i])
       delete recipient_queues[i];
   }
 }
@@ -41,13 +41,12 @@ Recipients::~Recipients() {
 bool Recipients::dequeue(u_int16_t recipient_id, AlertFifoItem *notification) {
   bool res = false;
 
-  if(recipient_id >= MAX_NUM_RECIPIENTS
-     || !notification)
+  if (recipient_id >= MAX_NUM_RECIPIENTS || !notification)
     return false;
 
   m.lock(__FILE__, __LINE__);
 
-  if(recipient_queues[recipient_id]) {
+  if (recipient_queues[recipient_id]) {
     /*
       Dequeue the notification
     */
@@ -61,19 +60,19 @@ bool Recipients::dequeue(u_int16_t recipient_id, AlertFifoItem *notification) {
 
 /* *************************************** */
 
-bool Recipients::enqueue(u_int16_t recipient_id, const AlertFifoItem* const notification) {
+bool Recipients::enqueue(u_int16_t recipient_id,
+                         const AlertFifoItem *const notification) {
   bool res = false;
 
-  if(recipient_id >= MAX_NUM_RECIPIENTS
-     || !notification)
+  if (recipient_id >= MAX_NUM_RECIPIENTS || !notification)
     return false;
 
   m.lock(__FILE__, __LINE__);
 
-  /* 
+  /*
      Perform the actual enqueue
    */
-  if(recipient_queues[recipient_id])
+  if (recipient_queues[recipient_id])
     res = recipient_queues[recipient_id]->enqueue(notification);
 
   m.unlock(__FILE__, __LINE__);
@@ -83,40 +82,42 @@ bool Recipients::enqueue(u_int16_t recipient_id, const AlertFifoItem* const noti
 
 /* *************************************** */
 
-bool Recipients::enqueue(const AlertFifoItem* const notification, AlertEntity alert_entity) {
-  bool res = true; /* Initialized to true so that if no recipient is responsible for the notification, true will be returned. */
+bool Recipients::enqueue(const AlertFifoItem *const notification,
+                         AlertEntity alert_entity) {
+  bool res = true; /* Initialized to true so that if no recipient is responsible
+                      for the notification, true will be returned. */
 
-  if(!notification)
+  if (!notification)
     return false;
 
   m.lock(__FILE__, __LINE__);
 
-  /* 
+  /*
      Perform the actual enqueue to all available recipients
    */
-  for(int recipient_id = 0; recipient_id < MAX_NUM_RECIPIENTS; recipient_id++) {
+  for (int recipient_id = 0; recipient_id < MAX_NUM_RECIPIENTS;
+       recipient_id++) {
 
-    /* Enqueue to builtin recipient only at the moment 
+    /* Enqueue to builtin recipient only at the moment
      * (TODO implement filtering based on the pool ID) */
-    if(recipient_id == 0) {
+    if (recipient_id == 0) {
 
-    if(recipient_queues[recipient_id]) {
-      bool success;
+      if (recipient_queues[recipient_id]) {
+        bool success;
 
-      /* TODO check matching pool IDs if any
-      if (alert_entity == alert_entity_flow) {
-        notification->pools.flow.cli_host_pool
-        notification->pools.flow.srv_host_pool
-      } else if (alert_entity == alert_entity_host) {
-        notification->pools.host.host_pool
+        /* TODO check matching pool IDs if any
+        if (alert_entity == alert_entity_flow) {
+          notification->pools.flow.cli_host_pool
+          notification->pools.flow.srv_host_pool
+        } else if (alert_entity == alert_entity_host) {
+          notification->pools.host.host_pool
+        }
+        */
+
+        success = recipient_queues[recipient_id]->enqueue(notification);
+
+        res &= success;
       }
-      */
-
-      success = recipient_queues[recipient_id]->enqueue(notification);
-      
-      res &= success;
-    }
-
     }
   }
 
@@ -127,20 +128,24 @@ bool Recipients::enqueue(const AlertFifoItem* const notification, AlertEntity al
 
 /* *************************************** */
 
-void Recipients::register_recipient(u_int16_t recipient_id, AlertLevel minimum_severity, u_int8_t enabled_categories) {  
-  if(recipient_id >= MAX_NUM_RECIPIENTS)
+void Recipients::register_recipient(u_int16_t recipient_id,
+                                    AlertLevel minimum_severity,
+                                    u_int8_t enabled_categories) {
+  if (recipient_id >= MAX_NUM_RECIPIENTS)
     return;
 
   m.lock(__FILE__, __LINE__);
 
-  if(!recipient_queues[recipient_id])
+  if (!recipient_queues[recipient_id])
     recipient_queues[recipient_id] = new (nothrow) RecipientQueues();
 
-  if(recipient_queues[recipient_id])
+  if (recipient_queues[recipient_id])
     recipient_queues[recipient_id]->setMinimumSeverity(minimum_severity),
-      recipient_queues[recipient_id]->setEnabledCategories(enabled_categories);
+        recipient_queues[recipient_id]->setEnabledCategories(
+            enabled_categories);
 
-  // ntop->getTrace()->traceEvent(TRACE_WARNING, "registered [%u][%u][%u]", recipient_id, minimum_severity, enabled_categories);
+  // ntop->getTrace()->traceEvent(TRACE_WARNING, "registered [%u][%u][%u]",
+  // recipient_id, minimum_severity, enabled_categories);
 
   m.unlock(__FILE__, __LINE__);
 }
@@ -148,12 +153,12 @@ void Recipients::register_recipient(u_int16_t recipient_id, AlertLevel minimum_s
 /* *************************************** */
 
 void Recipients::delete_recipient(u_int16_t recipient_id) {
-  if(recipient_id >= MAX_NUM_RECIPIENTS)
+  if (recipient_id >= MAX_NUM_RECIPIENTS)
     return;
 
   m.lock(__FILE__, __LINE__);
 
-  if(recipient_queues[recipient_id]) {
+  if (recipient_queues[recipient_id]) {
     delete recipient_queues[recipient_id];
     recipient_queues[recipient_id] = NULL;
   }
@@ -163,13 +168,13 @@ void Recipients::delete_recipient(u_int16_t recipient_id) {
 
 /* *************************************** */
 
-void Recipients::lua(u_int16_t recipient_id, lua_State* vm) {
-  if(recipient_id >= MAX_NUM_RECIPIENTS)
+void Recipients::lua(u_int16_t recipient_id, lua_State *vm) {
+  if (recipient_id >= MAX_NUM_RECIPIENTS)
     return;
 
   m.lock(__FILE__, __LINE__);
 
-  if(recipient_queues[recipient_id])
+  if (recipient_queues[recipient_id])
     recipient_queues[recipient_id]->lua(vm);
 
   m.unlock(__FILE__, __LINE__);
@@ -180,12 +185,12 @@ void Recipients::lua(u_int16_t recipient_id, lua_State* vm) {
 time_t Recipients::last_use(u_int16_t recipient_id) {
   time_t res = 0;
 
-  if(recipient_id >= MAX_NUM_RECIPIENTS)
+  if (recipient_id >= MAX_NUM_RECIPIENTS)
     return 0;
 
   m.lock(__FILE__, __LINE__);
 
-  if(recipient_queues[recipient_id])
+  if (recipient_queues[recipient_id])
     res = recipient_queues[recipient_id]->get_last_use();
 
   m.unlock(__FILE__, __LINE__);
@@ -200,11 +205,12 @@ bool Recipients::empty() {
 
   m.lock(__FILE__, __LINE__);
 
-  for(int recipient_id = 0; recipient_id < MAX_NUM_RECIPIENTS; recipient_id++) {
-    if(recipient_queues[recipient_id]) {
-      if(!recipient_queues[recipient_id]->empty()) {
-	res = false;
-	break;
+  for (int recipient_id = 0; recipient_id < MAX_NUM_RECIPIENTS;
+       recipient_id++) {
+    if (recipient_queues[recipient_id]) {
+      if (!recipient_queues[recipient_id]->empty()) {
+        res = false;
+        break;
       }
     }
   }

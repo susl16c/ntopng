@@ -25,27 +25,28 @@
 
 /* ************************************************ */
 
-void ListeningPorts::parsePortInfo(json_object *z, std::map <u_int16_t, ListeningPortInfo> *info) {
+void ListeningPorts::parsePortInfo(
+    json_object *z, std::map<u_int16_t, ListeningPortInfo> *info) {
   json_object *p;
   ListeningPortInfo pinfo;
   u_int16_t port = 0;
   enum json_type o_type = json_object_get_type(z);
-  
-  if(o_type == json_type_array) {
-    for(u_int i = 0; i < (u_int)json_object_array_length(z); i++) {
+
+  if (o_type == json_type_array) {
+    for (u_int i = 0; i < (u_int)json_object_array_length(z); i++) {
       json_object *e = json_object_array_get_idx(z, i);
-      
-      if(json_object_object_get_ex(e, "port", &p))
-	port = (u_int32_t)json_object_get_int(p);
-      
-      if(port != 0) {
-	if(json_object_object_get_ex(e, "pkg", &p))  
-	  pinfo.package = json_object_to_json_string(e);
-	
-	if(json_object_object_get_ex(e, "proc", &p))  
-	  pinfo.process = json_object_to_json_string(e);
-	
-	(*info)[port] = pinfo;
+
+      if (json_object_object_get_ex(e, "port", &p))
+        port = (u_int32_t)json_object_get_int(p);
+
+      if (port != 0) {
+        if (json_object_object_get_ex(e, "pkg", &p))
+          pinfo.package = json_object_to_json_string(e);
+
+        if (json_object_object_get_ex(e, "proc", &p))
+          pinfo.process = json_object_to_json_string(e);
+
+        (*info)[port] = pinfo;
       }
     }
   }
@@ -56,19 +57,19 @@ void ListeningPorts::parsePortInfo(json_object *z, std::map <u_int16_t, Listenin
 void ListeningPorts::parsePorts(json_object *z) {
   enum json_type o_type = json_object_get_type(z);
 
-  if(o_type == json_type_object) {
+  if (o_type == json_type_object) {
     json_object *p;
 
-    if(json_object_object_get_ex(z, "tcp4", &p))
+    if (json_object_object_get_ex(z, "tcp4", &p))
       parsePortInfo(p, &tcp4);
 
-    if(json_object_object_get_ex(z, "udp4", &p))
+    if (json_object_object_get_ex(z, "udp4", &p))
       parsePortInfo(p, &udp4);
 
-    if(json_object_object_get_ex(z, "tcp6", &p))
+    if (json_object_object_get_ex(z, "tcp6", &p))
       parsePortInfo(p, &tcp6);
 
-    if(json_object_object_get_ex(z, "udp6", &p))
+    if (json_object_object_get_ex(z, "udp6", &p))
       parsePortInfo(p, &udp6);
   }
 }

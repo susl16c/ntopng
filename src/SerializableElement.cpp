@@ -21,26 +21,27 @@
 
 #include "ntop_includes.h"
 
-/* *************************************** */ 
+/* *************************************** */
 
 bool SerializableElement::serializeToRedis() {
   json_object *my_obj;
 
-  if((my_obj = json_object_new_object()) != NULL) {
+  if ((my_obj = json_object_new_object()) != NULL) {
     char key[CONST_MAX_LEN_REDIS_KEY];
     int rc;
 
     serialize(my_obj, details_max);
 
-    rc = ntop->getRedis()->set(getSerializationKey(key, sizeof(key)),
-      json_object_to_json_string(my_obj),
-			       ntop->getPrefs()->get_local_host_cache_duration());
+    rc = ntop->getRedis()->set(
+        getSerializationKey(key, sizeof(key)),
+        json_object_to_json_string(my_obj),
+        ntop->getPrefs()->get_local_host_cache_duration());
 
     json_object_put(my_obj);
-    return(rc == 0);
+    return (rc == 0);
   }
 
-  return(false);
+  return (false);
 }
 
 /* *************************************** */
@@ -49,13 +50,14 @@ bool SerializableElement::deserializeFromRedis() {
   char key[CONST_MAX_LEN_REDIS_KEY];
   json_object *o;
 
-  if((o = SerializableElement::deserializeJson(getSerializationKey(key, sizeof(key)))) != NULL) {
+  if ((o = SerializableElement::deserializeJson(
+           getSerializationKey(key, sizeof(key)))) != NULL) {
     deserialize(o);
     json_object_put(o);
-    return(true);
+    return (true);
   }
 
-  return(false);
+  return (false);
 }
 
 /* *************************************** */
@@ -64,44 +66,49 @@ bool SerializableElement::deleteRedisSerialization() {
   char key[CONST_MAX_LEN_REDIS_KEY];
   char *serialization_key = getSerializationKey(key, sizeof(key));
 
-  ntop->getTrace()->traceEvent(TRACE_INFO, "Delete serialization %s", serialization_key);
-  return(ntop->getRedis()->del(serialization_key) == 0);
+  ntop->getTrace()->traceEvent(TRACE_INFO, "Delete serialization %s",
+                               serialization_key);
+  return (ntop->getRedis()->del(serialization_key) == 0);
 }
 
 /* *************************************** */
 
 /* NOTE: returned object must be freed by the caller */
-json_object* SerializableElement::deserializeJson(const char *key) {
+json_object *SerializableElement::deserializeJson(const char *key) {
   json_object *o;
   enum json_tokener_error jerr = json_tokener_success;
   u_int json_len;
   char *json = NULL;
 
-  if(!key) return(NULL);
+  if (!key)
+    return (NULL);
   json_len = ntop->getRedis()->len(key);
-  if(json_len == 0) json_len = CONST_MAX_LEN_REDIS_VALUE; else json_len += 8; /* Little overhead */
+  if (json_len == 0)
+    json_len = CONST_MAX_LEN_REDIS_VALUE;
+  else
+    json_len += 8; /* Little overhead */
 
   ntop->getTrace()->traceEvent(TRACE_INFO, "Deserializing %s", key);
 
-  if((json = (char*)calloc(json_len, sizeof(char))) == NULL) {
-    ntop->getTrace()->traceEvent(TRACE_ERROR, "Unable to allocate memory to deserialize %s", key);
-    return(NULL);
+  if ((json = (char *)calloc(json_len, sizeof(char))) == NULL) {
+    ntop->getTrace()->traceEvent(
+        TRACE_ERROR, "Unable to allocate memory to deserialize %s", key);
+    return (NULL);
   }
 
-  if(ntop->getRedis()->get((char*)key, json, json_len) != 0) {
+  if (ntop->getRedis()->get((char *)key, json, json_len) != 0) {
     free(json);
-    return(NULL);
+    return (NULL);
   }
 
-  if((o = json_tokener_parse_verbose(json, &jerr)) == NULL) {
-    ntop->getTrace()->traceEvent(TRACE_WARNING, "JSON Parse error [%s] key: %s: %s",
-				 json_tokener_error_desc(jerr),
-				 key,
-				 json);
+  if ((o = json_tokener_parse_verbose(json, &jerr)) == NULL) {
+    ntop->getTrace()->traceEvent(TRACE_WARNING,
+                                 "JSON Parse error [%s] key: %s: %s",
+                                 json_tokener_error_desc(jerr), key, json);
     free(json);
-    return(NULL);
+    return (NULL);
   }
 
   free(json);
-  return(o);
+  return (o);
 }

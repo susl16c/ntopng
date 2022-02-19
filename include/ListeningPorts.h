@@ -26,14 +26,15 @@ typedef struct {
   std::string process, package;
 } ListeningPortInfo;
 
-
 class ListeningPorts {
- private:
-  std::map <u_int16_t /* port */, ListeningPortInfo /* info */> tcp4, tcp6, udp4, udp6;
+private:
+  std::map<u_int16_t /* port */, ListeningPortInfo /* info */> tcp4, tcp6, udp4,
+      udp6;
 
-  void parsePortInfo(json_object *z, std::map <u_int16_t, ListeningPortInfo> *info);
-  
- public:
+  void parsePortInfo(json_object *z,
+                     std::map<u_int16_t, ListeningPortInfo> *info);
+
+public:
   ListeningPorts() { ; }
 
   void parsePorts(json_object *z);

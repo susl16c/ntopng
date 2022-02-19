@@ -25,14 +25,15 @@
 #include "ntop_includes.h"
 
 class SyslogParserInterface : public ParserInterface {
- private:
+private:
   SyslogLuaEngine *le;
   typedef std::map<string, string> producers_map_t;
   producers_map_t producers_map;
   bool producers_reload_requested;
 
- public:
-  SyslogParserInterface(const char *endpoint, const char *custom_interface_type = NULL);
+public:
+  SyslogParserInterface(const char *endpoint,
+                        const char *custom_interface_type = NULL);
   ~SyslogParserInterface();
 
   void addProducerMapping(const char *host, const char *producer);
@@ -43,10 +44,8 @@ class SyslogParserInterface : public ParserInterface {
   u_int8_t parseLog(char *log_line, char *client_ip);
 
   u_int32_t getNumDroppedPackets() { return 0; };
-  virtual void lua(lua_State* vm);
+  virtual void lua(lua_State *vm);
   virtual void startPacketPolling();
 };
 
 #endif /* _SYSLOG_PARSER_INTERFACE_H_ */
-
-

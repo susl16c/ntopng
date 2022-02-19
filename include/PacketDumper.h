@@ -25,7 +25,7 @@
 #include "ntop_includes.h"
 
 class PacketDumper {
- private:
+private:
   NetworkInterface *iface;
   pcap_dumper_t *dumper;
   u_int32_t file_id;
@@ -35,7 +35,7 @@ class PacketDumper {
   u_int64_t num_bytes_cur_file;
   char *out_path;
 
- public:
+public:
   PacketDumper(NetworkInterface *i, const char *path);
   ~PacketDumper();
 
@@ -46,7 +46,7 @@ class PacketDumper {
   bool openDump();
   void dumpPacket(const struct pcap_pkthdr *h, const u_char *packet);
   inline u_int64_t get_num_dumped_packets() { return num_dumped_packets; }
-  inline u_int64_t get_num_dumped_files()   { return file_id; }
+  inline u_int64_t get_num_dumped_files() { return file_id; }
 };
 
 #endif /* _PACKET_DUMPER_H_ */

@@ -25,14 +25,14 @@
 #include "ntop_includes.h"
 
 class RRDTimeseriesExporter : public TimeseriesExporter {
- private:
+private:
   StringFifoQueue *ts_queue;
 
- public:
+public:
   RRDTimeseriesExporter(NetworkInterface *_if);
   ~RRDTimeseriesExporter();
 
-  bool enqueueData(lua_State* vm, bool do_lock = true);
+  bool enqueueData(lua_State *vm, bool do_lock = true);
   char *dequeueData();
   u_int64_t queueLength() const;
   void flush();

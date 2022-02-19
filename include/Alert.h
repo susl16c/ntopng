@@ -23,7 +23,7 @@
 #define _ALERT_H_
 
 class Alert {
- public:
+public:
   time_t tstamp;
   time_t last_update;
   AlertType alert_id;

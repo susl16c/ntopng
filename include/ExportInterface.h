@@ -27,11 +27,11 @@
 #ifndef HAVE_NEDGE
 
 class ExportInterface {
- private:
+private:
   char *endpoint, *topic;
   void *publisher, *context;
 
- public:
+public:
   ExportInterface(const char *_endpoint, const char *_script_name = "flow");
   ~ExportInterface();
 
@@ -40,4 +40,3 @@ class ExportInterface {
 #endif
 
 #endif /* _EXPORT_INTERFACE_H_ */
-

@@ -24,71 +24,93 @@
 
 #include "ntop_includes.h"
 
-class NetworkStats : public InterfaceMemberAlertableEntity, public GenericTrafficElement, public Score {
- private:
+class NetworkStats : public InterfaceMemberAlertableEntity,
+                     public GenericTrafficElement,
+                     public Score {
+private:
   u_int8_t network_id;
   u_int32_t numHosts;
   TrafficStats ingress, ingress_broadcast; /* outside -> network */
   TrafficStats egress, egress_broadcast;   /* network -> outside */
-  TrafficStats inner, inner_broadcast;     /* network -> network (local traffic) */
-  TcpPacketStats tcp_packet_stats_ingress, tcp_packet_stats_egress, tcp_packet_stats_inner;
+  TrafficStats inner, inner_broadcast; /* network -> network (local traffic) */
+  TcpPacketStats tcp_packet_stats_ingress, tcp_packet_stats_egress,
+      tcp_packet_stats_inner;
   AlertCounter syn_flood_victim_alert;
   AlertCounter flow_flood_victim_alert;
-  u_int32_t syn_recvd_last_min, synack_sent_last_min; /* syn scan counters (victim) */
+  u_int32_t syn_recvd_last_min,
+      synack_sent_last_min; /* syn scan counters (victim) */
 
 #if defined(NTOPNG_PRO)
   time_t nextMinPeriodicUpdate;
   /* Behavioural analysis regarding the interface */
-  BehaviorAnalysis *score_behavior, *traffic_tx_behavior, *traffic_rx_behavior;  
+  BehaviorAnalysis *score_behavior, *traffic_tx_behavior, *traffic_rx_behavior;
 #endif
 
-  static inline void incTcp(TcpPacketStats *tps, u_int32_t ooo_pkts, u_int32_t retr_pkts, u_int32_t lost_pkts, u_int32_t keep_alive_pkts) {
-    if(ooo_pkts)        tps->incOOO(ooo_pkts);
-    if(retr_pkts)       tps->incRetr(retr_pkts);
-    if(lost_pkts)       tps->incLost(lost_pkts);
-    if(keep_alive_pkts) tps->incKeepAlive(keep_alive_pkts);
+  static inline void incTcp(TcpPacketStats *tps, u_int32_t ooo_pkts,
+                            u_int32_t retr_pkts, u_int32_t lost_pkts,
+                            u_int32_t keep_alive_pkts) {
+    if (ooo_pkts)
+      tps->incOOO(ooo_pkts);
+    if (retr_pkts)
+      tps->incRetr(retr_pkts);
+    if (lost_pkts)
+      tps->incLost(lost_pkts);
+    if (keep_alive_pkts)
+      tps->incKeepAlive(keep_alive_pkts);
   }
 
 #ifdef NTOPNG_PRO
   void updateBehaviorStats(const struct timeval *tv);
 #endif
 
- public:
+public:
   NetworkStats(NetworkInterface *iface, u_int8_t _network_id);
   virtual ~NetworkStats();
 
-  inline bool trafficSeen(){
+  inline bool trafficSeen() {
     return ingress.getNumPkts() || egress.getNumPkts() || inner.getNumPkts();
   };
-  
-  inline void incIngress(time_t t, u_int64_t num_pkts, u_int64_t num_bytes, bool broadcast) {
+
+  inline void incIngress(time_t t, u_int64_t num_pkts, u_int64_t num_bytes,
+                         bool broadcast) {
     rcvd.incStats(t, num_pkts, num_bytes);
     ingress.incStats(t, num_pkts, num_bytes);
-    if(broadcast) ingress_broadcast.incStats(t, num_pkts, num_bytes);
+    if (broadcast)
+      ingress_broadcast.incStats(t, num_pkts, num_bytes);
   };
-  
-  inline void incEgress(time_t t, u_int64_t num_pkts, u_int64_t num_bytes, bool broadcast) {
+
+  inline void incEgress(time_t t, u_int64_t num_pkts, u_int64_t num_bytes,
+                        bool broadcast) {
     sent.incStats(t, num_pkts, num_bytes);
     egress.incStats(t, num_pkts, num_bytes);
-    if(broadcast) egress_broadcast.incStats(t, num_pkts, num_bytes);
+    if (broadcast)
+      egress_broadcast.incStats(t, num_pkts, num_bytes);
   };
-  
-  inline void incInner(time_t t, u_int64_t num_pkts, u_int64_t num_bytes, bool broadcast) {
+
+  inline void incInner(time_t t, u_int64_t num_pkts, u_int64_t num_bytes,
+                       bool broadcast) {
     sent.incStats(t, num_pkts, num_bytes);
     inner.incStats(t, num_pkts, num_bytes);
-    if(broadcast) inner_broadcast.incStats(t, num_pkts, num_bytes);
+    if (broadcast)
+      inner_broadcast.incStats(t, num_pkts, num_bytes);
   };
 
-  inline void incIngressTcp(u_int32_t ooo_pkts, u_int32_t retr_pkts, u_int32_t lost_pkts, u_int32_t keep_alive_pkts) {
-    incTcp(&tcp_packet_stats_ingress, ooo_pkts, retr_pkts, lost_pkts, keep_alive_pkts);
+  inline void incIngressTcp(u_int32_t ooo_pkts, u_int32_t retr_pkts,
+                            u_int32_t lost_pkts, u_int32_t keep_alive_pkts) {
+    incTcp(&tcp_packet_stats_ingress, ooo_pkts, retr_pkts, lost_pkts,
+           keep_alive_pkts);
   };
 
-  inline void incEgressTcp(u_int32_t ooo_pkts, u_int32_t retr_pkts, u_int32_t lost_pkts, u_int32_t keep_alive_pkts) {
-    incTcp(&tcp_packet_stats_egress, ooo_pkts, retr_pkts, lost_pkts, keep_alive_pkts);
+  inline void incEgressTcp(u_int32_t ooo_pkts, u_int32_t retr_pkts,
+                           u_int32_t lost_pkts, u_int32_t keep_alive_pkts) {
+    incTcp(&tcp_packet_stats_egress, ooo_pkts, retr_pkts, lost_pkts,
+           keep_alive_pkts);
   };
 
-  inline void incInnerTcp(u_int32_t ooo_pkts, u_int32_t retr_pkts, u_int32_t lost_pkts, u_int32_t keep_alive_pkts) {
-    incTcp(&tcp_packet_stats_inner, ooo_pkts, retr_pkts, lost_pkts, keep_alive_pkts);
+  inline void incInnerTcp(u_int32_t ooo_pkts, u_int32_t retr_pkts,
+                          u_int32_t lost_pkts, u_int32_t keep_alive_pkts) {
+    incTcp(&tcp_packet_stats_inner, ooo_pkts, retr_pkts, lost_pkts,
+           keep_alive_pkts);
   };
 
   inline void incNumHosts() { numHosts++; };
@@ -96,8 +118,8 @@ class NetworkStats : public InterfaceMemberAlertableEntity, public GenericTraffi
   inline u_int32_t getNumHosts() const { return numHosts; };
 
   void setNetworkId(u_int8_t id);
-  bool match(const AddressTree * const tree) const;
-  void lua(lua_State* vm, bool diff = false);
+  bool match(const AddressTree *const tree) const;
+  void lua(lua_State *vm, bool diff = false);
   bool serialize(json_object *my_object);
   void deserialize(json_object *obj);
   void housekeepAlerts(ScriptPeriodicity p);

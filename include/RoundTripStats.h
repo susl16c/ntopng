@@ -25,18 +25,18 @@
 #define ROUND_TRIP_LENGTH 20
 
 class RoundTripStats {
- private:
-   u_int32_t stats[ROUND_TRIP_LENGTH];
-   u_int8_t stats_it;
+private:
+  u_int32_t stats[ROUND_TRIP_LENGTH];
+  u_int8_t stats_it;
 
- public:
-   RoundTripStats();
-   ~RoundTripStats();
-    
-   void addPoint(u_int32_t thpt);
-   void sum(RoundTripStats *_stats);    
-   void luaRTStats(lua_State* vm, const char *stats_name);
-   inline u_int32_t *getStats() { return(stats); };
+public:
+  RoundTripStats();
+  ~RoundTripStats();
+
+  void addPoint(u_int32_t thpt);
+  void sum(RoundTripStats *_stats);
+  void luaRTStats(lua_State *vm, const char *stats_name);
+  inline u_int32_t *getStats() { return (stats); };
 };
 
 #endif /* _ROUND_TRIP_STATS_H_ */

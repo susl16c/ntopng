@@ -23,22 +23,23 @@
 #define _HOST_HASH_H_
 
 #include "ntop_includes.h"
- 
+
 class HostHash : public GenericHash {
- private:
+private:
   u_int32_t num_http_hosts;
   Mutex m;
 
- public:
+public:
   HostHash(NetworkInterface *iface, u_int _num_hashes, u_int _max_hash_size);
 
   /* Search for an host by IP and VLAN */
-  Host* get(VLANid vlanId, IpAddress *key, bool is_inline_call, u_int16_t observation_point_id);
+  Host *get(VLANid vlanId, IpAddress *key, bool is_inline_call,
+            u_int16_t observation_point_id);
 
-  void incNumHTTPEntries();  
+  void incNumHTTPEntries();
   void decNumHTTPEntries();
-  
-  inline u_int32_t getNumHTTPEntries() { return(num_http_hosts); }
+
+  inline u_int32_t getNumHTTPEntries() { return (num_http_hosts); }
 };
 
 #endif /* _HOST_HASH_H_ */

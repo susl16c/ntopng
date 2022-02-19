@@ -27,7 +27,7 @@
 class IECInvalidTransitionAlert;
 
 class IEC104Stats {
- private:
+private:
   RwLock lock;
   struct {
     u_int32_t tx, rx;
@@ -44,16 +44,15 @@ class IEC104Stats {
   struct ndpi_analyze_struct *i_s_apdu;
   u_int16_t tx_seq_num, rx_seq_num;
 
- public:
+public:
   IEC104Stats();
   ~IEC104Stats();
 
-  void processPacket(Flow *f, bool tx_direction,
-		     const u_char *payload, u_int16_t payload_len,
-		     struct timeval *packet_time);
+  void processPacket(Flow *f, bool tx_direction, const u_char *payload,
+                     u_int16_t payload_len, struct timeval *packet_time);
 
-  void lua(lua_State* vm);
-  char* getFlowInfo(char *buf, u_int buf_len);
+  void lua(lua_State *vm);
+  char *getFlowInfo(char *buf, u_int buf_len);
 };
 
 #endif /* _IEC104_STATS_H_ */

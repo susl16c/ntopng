@@ -25,7 +25,7 @@
 #include "ntop_includes.h"
 
 class ElasticSearch : public DB {
- private:
+private:
   pthread_t esThreadLoop;
   u_int num_queued_elems;
   struct string_list *head, *tail;
@@ -35,15 +35,15 @@ class ElasticSearch : public DB {
   char *es_template_push_url, *es_version_query_url;
   char es_version[2];
   bool es_version_inited;
-  const char * get_es_version();
-  const char * get_es_template();
+  const char *get_es_version();
+  const char *get_es_template();
 
- public:
+public:
   ElasticSearch(NetworkInterface *_iface);
   ~ElasticSearch();
 
   inline bool atleast_version_6() {
-    const char * ver = get_es_version();
+    const char *ver = get_es_version();
     return ver && strcmp(ver, "6") >= 0;
   };
   void pushEStemplate();
@@ -52,6 +52,5 @@ class ElasticSearch : public DB {
   virtual bool dumpFlow(time_t when, Flow *f, char *json);
   virtual void startLoop();
 };
-
 
 #endif /* _ELASTIC_SEARCH_H_ */

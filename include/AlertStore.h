@@ -25,11 +25,14 @@
 #include "ntop_includes.h"
 
 class AlertStore {
- public:
-  AlertStore() { ; };
-  virtual ~AlertStore() { ; };
-  
-  virtual bool query(lua_State *vm, const char * query) { return false; };
+public:
+  AlertStore() = default;
+  AlertStore(const AlertStore &store) = default;
+  AlertStore &operator=(const AlertStore &store) = default;
+  AlertStore(AlertStore &&store) = default;
+  AlertStore &operator=(AlertStore &&store) = default;
+  virtual ~AlertStore() = default;
+  virtual bool query(lua_State *vm, const char *query) = 0;
 };
 
 #endif /* _ALERT_STORE_H_ */

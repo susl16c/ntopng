@@ -27,19 +27,20 @@ SyslogLuaEngine::SyslogLuaEngine(NetworkInterface *iface) : LuaEngine(NULL) {
   initialized = false;
 
   snprintf(script_path, sizeof(script_path), "%s/%s",
-	   ntop->getPrefs()->get_scripts_dir(), 
-	   SYSLOG_SCRIPT_PATH);
+           ntop->getPrefs()->get_scripts_dir(), SYSLOG_SCRIPT_PATH);
 
   ntop->fixPath(script_path);
 
-  if(load_script(script_path, iface) < 0) {
-    ntop->getTrace()->traceEvent(TRACE_ERROR, "Failure loading %s", script_path);
+  if (load_script(script_path, iface) < 0) {
+    ntop->getTrace()->traceEvent(TRACE_ERROR, "Failure loading %s",
+                                 script_path);
     return;
   }
 
   /* Execute the script so that the "setup" function will be exposed */
-  if(lua_pcall(L, 0, 0, 0)) {
-    ntop->getTrace()->traceEvent(TRACE_WARNING, "Script failure[%s] [%s]", script_path, lua_tostring(L, -1));
+  if (lua_pcall(L, 0, 0, 0)) {
+    ntop->getTrace()->traceEvent(TRACE_WARNING, "Script failure[%s] [%s]",
+                                 script_path, lua_tostring(L, -1));
     return;
   }
 
@@ -73,7 +74,8 @@ bool SyslogLuaEngine::pcall(int num_args, int num_results) {
   }
 
   if (lua_pcall(L, num_args, num_results, 0)) {
-    ntop->getTrace()->traceEvent(TRACE_WARNING, "Script failure [%s]", lua_tostring(L, -1));
+    ntop->getTrace()->traceEvent(TRACE_WARNING, "Script failure [%s]",
+                                 lua_tostring(L, -1));
     return false;
   }
 
@@ -83,7 +85,7 @@ bool SyslogLuaEngine::pcall(int num_args, int num_results) {
 /* **************************************************** */
 
 void SyslogLuaEngine::handleEvent(const char *producer, const char *message,
-    const char *host, int priority) {
+                                  const char *host, int priority) {
   lua_State *L = getState();
   lua_getglobal(L, SYSLOG_SCRIPT_CALLBACK_EVENT);
   lua_pushstring(L, producer ? producer : "");
@@ -92,4 +94,3 @@ void SyslogLuaEngine::handleEvent(const char *producer, const char *message,
   lua_pushinteger(L, priority);
   pcall(4 /* num args */, 0);
 }
-

@@ -27,25 +27,25 @@ FlowAlert::FlowAlert(FlowCheck *c, Flow *f) {
   flow = f;
   cli_attacker = srv_attacker = false;
   cli_victim = srv_victim = false;
-  if (c) check_name = c->getName();
+  if (c)
+    check_name = c->getName();
 }
 
 /* **************************************************** */
 
-FlowAlert::~FlowAlert() {
-}
+FlowAlert::~FlowAlert() {}
 
 /* ***************************************************** */
 
-ndpi_serializer* FlowAlert::getSerializedAlert() {
+ndpi_serializer *FlowAlert::getSerializedAlert() {
   ndpi_serializer *serializer;
 
-  serializer = (ndpi_serializer *) malloc(sizeof(ndpi_serializer));
-  
-  if(serializer == NULL)
+  serializer = (ndpi_serializer *)malloc(sizeof(ndpi_serializer));
+
+  if (serializer == NULL)
     return NULL;
 
-  if(ndpi_init_serializer(serializer, ndpi_serialization_format_json) == -1) {
+  if (ndpi_init_serializer(serializer, ndpi_serialization_format_json) == -1) {
     free(serializer);
     return NULL;
   }
@@ -54,11 +54,13 @@ ndpi_serializer* FlowAlert::getSerializedAlert() {
 
   /* Guys used to link the alert back to the active flow */
   ndpi_serialize_string_uint64(serializer, "ntopng.key", flow->key());
-  ndpi_serialize_string_uint64(serializer, "hash_entry_id", flow->get_hash_entry_id());
+  ndpi_serialize_string_uint64(serializer, "hash_entry_id",
+                               flow->get_hash_entry_id());
 
   /* Add information relative to this check */
   ndpi_serialize_start_of_block(serializer, "alert_generation");
-  ndpi_serialize_string_string(serializer, "script_key", getCheckName().c_str());
+  ndpi_serialize_string_string(serializer, "script_key",
+                               getCheckName().c_str());
   ndpi_serialize_string_string(serializer, "subdir", "flow");
   ndpi_serialize_end_of_block(serializer);
 
@@ -68,58 +70,58 @@ ndpi_serializer* FlowAlert::getSerializedAlert() {
   u_int16_t l7proto = flow->getLowerProtocol();
 
   ndpi_serialize_string_string(serializer, "info", info ? info : "");
-  
+
   ndpi_serialize_start_of_block(serializer, "proto"); /* proto block */
-  
+
   /* Adding protocol info; switch the lower application protocol */
-  switch(l7proto) {
-    case NDPI_PROTOCOL_DNS:
-      ndpi_serialize_start_of_block(serializer, "dns");
-      flow->getDNSInfo(serializer);
-      ndpi_serialize_end_of_block(serializer);
-      break;
-  
-    case NDPI_PROTOCOL_HTTP:
-    case NDPI_PROTOCOL_HTTP_PROXY:
-      ndpi_serialize_start_of_block(serializer, "http");
-      flow->getHTTPInfo(serializer);
-      ndpi_serialize_end_of_block(serializer);
-      break;
-  
-    case NDPI_PROTOCOL_TLS:
-    case NDPI_PROTOCOL_MAIL_IMAPS:
-    case NDPI_PROTOCOL_MAIL_SMTPS:
-    case NDPI_PROTOCOL_MAIL_POPS:
-    case NDPI_PROTOCOL_QUIC:
-      ndpi_serialize_start_of_block(serializer, "tls");
-      flow->getTLSInfo(serializer);
-      ndpi_serialize_end_of_block(serializer);
-      break; 
+  switch (l7proto) {
+  case NDPI_PROTOCOL_DNS:
+    ndpi_serialize_start_of_block(serializer, "dns");
+    flow->getDNSInfo(serializer);
+    ndpi_serialize_end_of_block(serializer);
+    break;
 
-    case NDPI_PROTOCOL_IP_ICMP:
-    case NDPI_PROTOCOL_IP_ICMPV6:
-      ndpi_serialize_start_of_block(serializer, "icmp");
-      flow->getICMPInfo(serializer);
-      ndpi_serialize_end_of_block(serializer);
-      break;
+  case NDPI_PROTOCOL_HTTP:
+  case NDPI_PROTOCOL_HTTP_PROXY:
+    ndpi_serialize_start_of_block(serializer, "http");
+    flow->getHTTPInfo(serializer);
+    ndpi_serialize_end_of_block(serializer);
+    break;
 
-    case NDPI_PROTOCOL_MDNS:
-      ndpi_serialize_start_of_block(serializer, "mdns");
-      flow->getMDNSInfo(serializer);
-      ndpi_serialize_end_of_block(serializer);
-      break;
-    
-    case NDPI_PROTOCOL_NETBIOS:
-      ndpi_serialize_start_of_block(serializer, "netbios");
-      flow->getNetBiosInfo(serializer);
-      ndpi_serialize_end_of_block(serializer);
-      break;
-    
-    case NDPI_PROTOCOL_SSH:
-      ndpi_serialize_start_of_block(serializer, "ssh");
-      flow->getSSHInfo(serializer);
-      ndpi_serialize_end_of_block(serializer);
-      break;
+  case NDPI_PROTOCOL_TLS:
+  case NDPI_PROTOCOL_MAIL_IMAPS:
+  case NDPI_PROTOCOL_MAIL_SMTPS:
+  case NDPI_PROTOCOL_MAIL_POPS:
+  case NDPI_PROTOCOL_QUIC:
+    ndpi_serialize_start_of_block(serializer, "tls");
+    flow->getTLSInfo(serializer);
+    ndpi_serialize_end_of_block(serializer);
+    break;
+
+  case NDPI_PROTOCOL_IP_ICMP:
+  case NDPI_PROTOCOL_IP_ICMPV6:
+    ndpi_serialize_start_of_block(serializer, "icmp");
+    flow->getICMPInfo(serializer);
+    ndpi_serialize_end_of_block(serializer);
+    break;
+
+  case NDPI_PROTOCOL_MDNS:
+    ndpi_serialize_start_of_block(serializer, "mdns");
+    flow->getMDNSInfo(serializer);
+    ndpi_serialize_end_of_block(serializer);
+    break;
+
+  case NDPI_PROTOCOL_NETBIOS:
+    ndpi_serialize_start_of_block(serializer, "netbios");
+    flow->getNetBiosInfo(serializer);
+    ndpi_serialize_end_of_block(serializer);
+    break;
+
+  case NDPI_PROTOCOL_SSH:
+    ndpi_serialize_start_of_block(serializer, "ssh");
+    flow->getSSHInfo(serializer);
+    ndpi_serialize_end_of_block(serializer);
+    break;
   }
 
   ndpi_serialize_end_of_block(serializer); /* proto block */

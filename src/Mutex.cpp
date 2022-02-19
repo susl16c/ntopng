@@ -21,7 +21,6 @@
 
 #include "ntop_includes.h"
 
-
 /* ******************************* */
 
 Mutex::Mutex() {
@@ -43,11 +42,11 @@ void Mutex::lock(const char *filename, const int line, bool trace_errors) {
   rc = pthread_mutex_lock(&the_mutex);
   //~ printf("LOCK %s:%d\n", filename, line);
 
-  if(rc != 0) {
-    if(trace_errors)
-      ntop->getTrace()->traceEvent(TRACE_WARNING,
-				   "pthread_mutex_lock() returned %d [%s][errno=%d]",
-				   rc, strerror(rc), errno);
+  if (rc != 0) {
+    if (trace_errors)
+      ntop->getTrace()->traceEvent(
+          TRACE_WARNING, "pthread_mutex_lock() returned %d [%s][errno=%d]", rc,
+          strerror(rc), errno);
   } else
     locked = true;
 
@@ -68,11 +67,11 @@ void Mutex::unlock(const char *filename, const int line, bool trace_errors) {
 
   rc = pthread_mutex_unlock(&the_mutex);
 
-  if(rc != 0) {
-    if(trace_errors && (errno != 0))
-      ntop->getTrace()->traceEvent(TRACE_WARNING,
-				   "pthread_mutex_unlock() returned %d [%s][errno=%d]",
-				   rc, strerror(rc), errno);
+  if (rc != 0) {
+    if (trace_errors && (errno != 0))
+      ntop->getTrace()->traceEvent(
+          TRACE_WARNING, "pthread_mutex_unlock() returned %d [%s][errno=%d]",
+          rc, strerror(rc), errno);
   }
   locked = false; /* Always unlock */
 
